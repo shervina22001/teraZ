@@ -7,7 +7,7 @@
 
 /* 3) Sumber file yang discan untuk class Tailwind (Blade + React/TSX) */
 @source "../views";
-@source "../js//*.{js,jsx,ts,tsx}";
+@source "../js/**/*.{js,jsx,ts,tsx}";
 @source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php";
 
 /* 4) Variants tambahan */
