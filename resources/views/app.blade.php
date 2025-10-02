@@ -41,7 +41,7 @@
 
        @viteReactRefresh
        @vite(['resources/js/app.tsx','resources/css/app.css'])
-     @inertiaHead
+         @inertiaHead
     </head>
     <body class="font-sans antialiased">
         @inertia
