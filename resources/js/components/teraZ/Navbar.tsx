@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from '@inertiajs/react';
 
 // Color Configuration
 const colors = {
@@ -46,18 +47,19 @@ const Navbar = () => {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3 flex-shrink-0">
-          <button
-            className="rounded-full font-medium text-sm transition-all hover:scale-110"
-            style={{
-              minWidth: 120,
-              height: 36,
-              backgroundColor: colors.buttonLogin,
-              color: colors.buttonContactText,
-            }}
-          >
-            Login
-          </button>
-
+          <Link href="/login">
+            <button
+              className="rounded-full font-medium text-sm transition-all hover:scale-110"
+              style={{
+                minWidth: 120,
+                height: 36,
+                backgroundColor: colors.buttonLogin,
+                color: colors.buttonContactText,
+              }}
+            >
+              Login
+            </button>
+          </Link>
           <a
             href="#contact"
             className="rounded-full font-medium text-sm transition-all hover:scale-110 flex items-center justify-center"

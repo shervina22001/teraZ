@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "./Navbar";
+import { Link } from '@inertiajs/react';
 
 const colors = {
   primary: "#C97856",
@@ -103,7 +104,8 @@ const HeroSection = () => {
 
               {/* CTA */}
               <div className="flex gap-4">
-                <button
+                <Link
+                  href="/login" 
                   className="rounded-lg px-8 py-3 font-semibold text-base transition-all hover:scale-110"
                   style={{
                     backgroundColor: colors.primary,
@@ -112,8 +114,9 @@ const HeroSection = () => {
                   }}
                 >
                   Login
-                </button>
-                <button
+                </Link>
+                <a
+                  href="#contact"
                   className="rounded-lg px-8 py-3 font-semibold text-base transition-all hover:scale-110"
                   style={{
                     backgroundColor: colors.accent,
@@ -122,7 +125,7 @@ const HeroSection = () => {
                   }}
                 >
                   Get in Touch
-                </button>
+                </a>
               </div>
             </div>
           </div>

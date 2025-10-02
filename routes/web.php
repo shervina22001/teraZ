@@ -9,4 +9,4 @@ Route::get('/', function () {
 
 Route::get('/login', function () {
     return Inertia::render('LoginPage');
-});
+})->name('login');
