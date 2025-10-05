@@ -98,7 +98,7 @@ const Profile: React.FC<ProfileProps> = ({ user, room, contract }) => {
                     </div>
 
                     {/* Informasi Kamar */}
-                    <div className="bg-[#F1E0CB] rounded-xl p-8 shadow-md">
+                    <div className="bg-[#F7ECE0] rounded-xl p-8 shadow-md">
                         <h2 className="text-2xl font-semibold text-[#412E27] mb-6">
                             Informasi Kamar
                         </h2>
@@ -125,7 +125,7 @@ const Profile: React.FC<ProfileProps> = ({ user, room, contract }) => {
                 </div>
 
                 {/* Bottom Section - Informasi Kontrak */}
-                <div className="bg-[#F1E0CB] rounded-xl p-8 shadow-md">
+                <div className="bg-[#F7ECE0] rounded-xl p-8 shadow-md">
                     <h2 className="text-2xl font-semibold text-[#412E27] mb-6">
                         Informasi Kontrak
                     </h2>
