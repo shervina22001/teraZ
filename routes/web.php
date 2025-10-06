@@ -1,14 +1,20 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::get('/', function () {
+
+    return response()->json(['message' => 'Laravel API running 🚀']);
+
     return Inertia::render('LandingPage');
 });
 
 Route::get('/login', function () {
     return Inertia::render('LoginPage');
+
+})->name('login');
+
+
 });
 
 Route::get('/profile', function () {
@@ -143,3 +149,4 @@ Route::post('/pembayaran/confirm', function () {
         return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
     }
 })->name('pembayaran.confirm');
+
