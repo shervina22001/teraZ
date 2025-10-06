@@ -71,7 +71,7 @@ const LoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post<LoginResponse>('/api/login', formData, {
+      const response = await axios.post<LoginResponse>('http://localhost:8000/api/login', formData, {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
