@@ -93,7 +93,7 @@ const LoginPage: React.FC = () => {
         }
 
         // Redirect ke halaman utama
-        window.location.href = '/';
+        window.location.href = '/profile';
       } else {
         setErrors({ general: 'Login gagal. Coba lagi.' });
       }
