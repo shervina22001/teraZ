@@ -10,10 +10,22 @@ class Room extends Model
     use HasFactory;
 
     protected $fillable = [
-        'nomor_kamar',
-        'tipe',
-        'harga',
+        'room_number',
+        'room_type',
+        'price',
+        'facilities',
         'status',
-        'fasilitas'
+        'description',
     ];
+
+    // Relasi
+    public function tenants()
+    {
+        return $this->hasMany(Tenant::class);
+    }
+
+    public function maintenanceRequests()
+    {
+        return $this->hasMany(MaintenanceRequest::class);
+    }
 }
