@@ -3,7 +3,7 @@ import axios, { AxiosError } from 'axios';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 interface LoginFormData {
-  email: string;
+  username: string;
   password: string;
 }
 
@@ -13,7 +13,7 @@ interface LoginResponse {
   user?: {
     id: number;
     name: string;
-    email: string;
+    usernam: string;
   };
   token?: string;
 }
@@ -27,10 +27,10 @@ interface LoginError {
 }
 
 const LoginPage: React.FC = () => {
-  const [formData, setFormData] = useState<LoginFormData>({ email: '', password: '' });
+  const [formData, setFormData] = useState<LoginFormData>({ username: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
+  const [errors, setErrors] = useState<{ username?: string; password?: string; general?: string }>({});
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -42,12 +42,10 @@ const LoginPage: React.FC = () => {
   };
 
   const validateForm = (): boolean => {
-    const newErrors: { email?: string; password?: string } = {};
+    const newErrors: { username?: string; password?: string } = {};
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email harus diisi';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Format email tidak valid';
+    if (!formData.username.trim()) {
+      newErrors.username = 'Username harus diisi';
     }
 
     if (!formData.password) {
@@ -97,11 +95,11 @@ const LoginPage: React.FC = () => {
         const data = axiosError.response.data;
 
         if (status === 401) {
-          setErrors({ general: 'Email atau password salah' });
+          setErrors({ general: 'Username atau password salah' });
         } else if (status === 422) {
           if (data.errors) {
-            const validationErrors: { email?: string; password?: string } = {};
-            if (data.errors.email) validationErrors.email = data.errors.email[0];
+            const validationErrors: { username?: string; password?: string } = {};
+            if (data.errors.username) validationErrors.username = data.errors.username[0];
             if (data.errors.password) validationErrors.password = data.errors.password[0];
             setErrors(validationErrors);
           } else {
@@ -160,29 +158,30 @@ const LoginPage: React.FC = () => {
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 
-                {/* Email Input */}
+                {/* Username Input */}
                 <div>
-                  <label htmlFor="email" className="block text-[#3D3D3D] font-medium mb-3 text-base font-['Poppins']">
-                    Email
+                  <label htmlFor="username" className="block text-[#3D3D3D] font-medium mb-3 text-base font-['Poppins']">
+                    Username
                   </label>
                   <div className="relative flex items-center">
                     <Mail className="absolute left-0 h-5 w-5 text-gray-400" />
                     <input
-                      type="email"
-                      name="email"
-                      id="email"
-                      value={formData.email}
+                      type="text"
+                      name="username"
+                      id="username"
+                      value={formData.username}
                       onChange={handleInputChange}
-                      placeholder="demo@email.com"
+                      placeholder="yourusername"
                       className="w-full pl-8 pr-3 py-3 border-b-2 border-gray-400 focus:border-[#7D4E3D] outline-none transition-colors bg-transparent placeholder-gray-400 text-gray-800 text-base font-['Poppins']"
                     />
                   </div>
                   <div className="h-5 mt-1">
-                    {errors.email && (
-                      <p className="text-xs text-red-600 font-['Poppins']">{errors.email}</p>
+                    {errors.username && (
+                      <p className="text-xs text-red-600 font-['Poppins']">{errors.username}</p>
                     )}
                   </div>
                 </div>
+
 
                 {/* Password Input */}
                 <div>

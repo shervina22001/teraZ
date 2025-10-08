@@ -3,14 +3,17 @@
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+// Landing Page
 Route::get('/', function () {
     return Inertia::render('LandingPage');
-});
+})->name('landing');
 
+// Halaman Login
 Route::get('/login', function () {
     return Inertia::render('LoginPage');
-});
+})->name('login');
 
+// Halaman Profil Pengguna
 Route::get('/profile', function () {
     return Inertia::render('user/ProfilePage', [
         'user' => [
@@ -31,8 +34,9 @@ Route::get('/profile', function () {
             'duration_months' => 3,
         ],
     ]);
-});
+})->name('profile');
 
+// Lapor Kerusakan
 Route::get('/lapor-kerusakan', function () {
     return Inertia::render('user/MaintenancePage', [
         'user' => [
@@ -63,15 +67,14 @@ Route::get('/lapor-kerusakan', function () {
             ],
         ],
     ]);
-});
+})->name('maintenance.index');
 
+// Simpan laporan kerusakan
 Route::post('/lapor-kerusakan', function () {
-    // Handle form submission
-    // Validate and store the maintenance report
-    
-    return redirect()->back()->with('success', 'Laporan berhasil dikirim');    
-});
+    return redirect()->back()->with('success', 'Laporan berhasil dikirim');
+})->name('maintenance.store');
 
+// Pembayaran
 Route::get('/pembayaran', function () {
     return Inertia::render('user/PembayaranPage', [
         'user' => [
@@ -110,8 +113,8 @@ Route::get('/pembayaran', function () {
     ]);
 })->name('pembayaran.index');
 
+// Konfirmasi Pembayaran
 Route::post('/pembayaran/confirm', function () {
-    // Validate request
     $validated = request()->validate([
         'payment_id' => 'required|integer',
         'payment_method' => 'required|string|in:transfer,cash,ewallet',
@@ -119,17 +122,18 @@ Route::post('/pembayaran/confirm', function () {
     ]);
 
     try {
-        // Handle file upload
         if (request()->hasFile('payment_proof')) {
             $file = request()->file('payment_proof');
             $filename = time() . '_' . $file->getClientOriginalName();
             $path = $file->storeAs('payment_proofs', $filename, 'public');
-            
-            return redirect()->route('pembayaran.index')->with('success', 'Pembayaran berhasil dikonfirmasi dan sedang diverifikasi');
+
+
+            return redirect()->route('pembayaran.index')
+                ->with('success', 'Pembayaran berhasil dikonfirmasi dan sedang diverifikasi');
+
         }
 
         return redirect()->back()->with('error', 'Gagal mengupload bukti pembayaran');
-        
     } catch (\Exception $e) {
         return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
     }
