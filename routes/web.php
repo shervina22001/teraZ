@@ -127,10 +127,10 @@ Route::post('/pembayaran/confirm', function () {
             $filename = time() . '_' . $file->getClientOriginalName();
             $path = $file->storeAs('payment_proofs', $filename, 'public');
 
-            // TODO: Simpan data pembayaran ke database
 
             return redirect()->route('pembayaran.index')
                 ->with('success', 'Pembayaran berhasil dikonfirmasi dan sedang diverifikasi');
+
         }
 
         return redirect()->back()->with('error', 'Gagal mengupload bukti pembayaran');
@@ -138,3 +138,104 @@ Route::post('/pembayaran/confirm', function () {
         return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
     }
 })->name('pembayaran.confirm');
+
+Route::get('/admin/dashboard', function () {
+    return Inertia::render('admin/DashboardAdminPage', [
+        'user' => [
+            'id' => 1,
+            'name' => 'Admin',
+        ],
+    ]);
+});
+
+Route::get('/admin/kelola-kamar', function () {
+    return Inertia::render('admin/KelolaKamarAdminPage', [
+        'user' => [
+            'id' => 1,
+            'name' => 'Admin',
+        ],
+    ]);
+})->name('admin.kelola-kamar');
+
+Route::get('/admin/penghuni', function () {
+    return Inertia::render('admin/ManajemenPenghuniAdminPage', [
+        'user' => [
+            'id' => 1,
+            'name' => 'Admin',
+        ],
+    ]);
+})->name('admin.penghuni');
+
+Route::get('/admin/maintenance', function () {
+    return Inertia::render('admin/MaintenanceAdminPage', [
+        'user' => [
+            'id' => 1,
+            'name' => 'Admin',
+        ],
+    ]);
+})->name('admin.maintenance');
+
+Route::get('/admin/keuangan', function () {
+    return Inertia::render('admin/KeuanganAdminPage', [
+        'user' => [
+            'id' => 1,
+            'name' => 'Admin',
+        ],
+        'statistics' => [
+            'total_pendapatan' => 850000,
+            'pembayaran_tertunda' => 1850000,
+            'total_pengeluaran' => 500000,
+            'keuntungan_bersih' => 350000,
+        ],
+        'pemasukan' => [
+            [
+                'id' => 1,
+                'kamar' => 'Kamar 01',
+                'kategori' => 'Sewa bulan Juli 2025',
+                'tanggal' => '12/7/2025',
+                'jumlah' => 850000,
+            ],
+            [
+                'id' => 2,
+                'kamar' => 'Kamar 04',
+                'kategori' => 'Sewa bulan Juli 2025',
+                'tanggal' => '12/6/2025',
+                'jumlah' => 1000000,
+            ],
+        ],
+        'pengeluaran' => [
+            [
+                'id' => 1,
+                'judul' => 'Perbaikan AC unit 01',
+                'kategori' => 'Maintenance',
+                'tanggal' => '2/7/2025',
+                'jumlah' => 500000,
+                'status' => 'Perbaikan',
+            ],
+            [
+                'id' => 2,
+                'judul' => 'Tagihan air bulanan',
+                'kategori' => 'Utilities',
+                'tanggal' => '15/6/2025',
+                'jumlah' => 500000,
+                'status' => 'Perbaikan',
+            ],
+        ],
+        'pending' => [
+            [
+                'id' => 1,
+                'kamar' => 'Kamar 02',
+                'periode' => 'Sewa bulan Agustus 2025',
+                'jatuh_tempo' => '15/8/2025',
+                'jumlah' => 850000,
+            ],
+            [
+                'id' => 2,
+                'kamar' => 'Kamar 04',
+                'periode' => 'Sewa bulan Agustus 2025',
+                'jatuh_tempo' => '15/8/2025',
+                'jumlah' => 1000000,
+            ],
+        ],
+    ]);
+})->name('admin.keuangan');
