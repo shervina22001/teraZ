@@ -8,6 +8,8 @@ use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvi
 class RouteServiceProvider extends ServiceProvider
 {
     
+    public const HOME = '/';
+
     public function boot(): void
     {
             $this->routes(function () {

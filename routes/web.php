@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\LoginController;
 use Inertia\Inertia;
 
 // Landing Page
@@ -8,10 +10,16 @@ Route::get('/', function () {
     return Inertia::render('LandingPage');
 })->name('landing');
 
-// Halaman Login
-Route::get('/login', function () {
-    return Inertia::render('LoginPage');
-})->name('login');
+// Login
+Route::get('/login', [LoginController::class, 'show'])->name('login');
+Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+Route::middleware(['auth'])->get('/user', function () {
+    return Inertia::render('LayoutUser', [
+        'user' => Auth::user(),
+    ]);
+})->name('user.dashboard');
 
 // Halaman Profil Pengguna
 Route::get('/profile', function () {

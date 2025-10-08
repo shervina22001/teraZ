@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from '@inertiajs/react';
+import { usePage, Link } from '@inertiajs/react';
 
 // Color Configuration
 const colors = {
@@ -11,6 +11,10 @@ const colors = {
 };
 
 const Navbar = () => {
+  const { auth } = usePage<{ auth?: { user?: { name: string; } } }>().props;
+  const user = auth?.user;
+
+
   return (
     <nav
       className="w-full px-8 flex items-center"
@@ -47,19 +51,38 @@ const Navbar = () => {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3 flex-shrink-0">
-          <Link href="/login">
-            <button
-              className="rounded-full font-medium text-sm transition-all hover:scale-110"
-              style={{
-                minWidth: 120,
-                height: 36,
-                backgroundColor: colors.buttonLogin,
-                color: colors.buttonContactText,
-              }}
-            >
-              Login
-            </button>
-          </Link>
+          {/* Tombol Login atau Profil */}
+          {!user ? (
+            <Link href="/login">
+              <button
+                className="rounded-full font-medium text-sm transition-all hover:scale-110"
+                style={{
+                  minWidth: 120,
+                  height: 36,
+                  backgroundColor: colors.buttonLogin,
+                  color: colors.buttonContactText,
+                }}
+              >
+                Login
+              </button>
+            </Link>
+          ) : (
+            <Link href="/user">
+              <button
+                className="rounded-full font-medium text-sm transition-all hover:scale-110"
+                style={{
+                  minWidth: 120,
+                  height: 36,
+                  backgroundColor: colors.buttonLogin,
+                  color: colors.buttonContactText,
+                }}
+              >
+                {user.name}
+              </button>
+            </Link>
+          )}
+
+          {/* Tombol Contact Us */}
           <a
             href="#contact"
             className="rounded-full font-medium text-sm transition-all hover:scale-110 flex items-center justify-center"

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
+import axios from 'axios';
 import { Head } from '@inertiajs/react';
 import Layout from '@/components/teraZ/user/LayoutUser';
 import { Mail, Phone, UserRoundCheck, Calendar, ArrowRight, ArrowLeft } from 'lucide-react';
@@ -23,31 +24,78 @@ interface Contract {
     duration_months: number;
 }
 
-interface ProfileProps {
-    user: User;
-    room: Room;
-    contract: Contract;
-}
+const Profile: React.FC = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [room, setRoom] = useState<Room | null>(null);
+  const [contract, setContract] = useState<Contract | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-const Profile: React.FC<ProfileProps> = ({ user, room, contract }) => {
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0,
-        }).format(amount);
-    };
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('id-ID', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric'
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        if (!token) {
+          window.location.href = '/login';
+          return;
+        }
+
+        const response = await axios.get(`${API_BASE}/api/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
         });
+
+        const data = response.data.user;
+
+        // Misal sementara disimulasikan:
+        setUser(data);
+        setRoom({
+          number: 'A1',
+          type: 'Single Room',
+          monthly_rent: 1200000,
+        });
+        setContract({
+          start_date: '2025-01-01',
+          end_date: '2025-12-31',
+          duration_months: 12,
+        });
+
+      } catch (err: any) {
+        console.error(err);
+        setError('Gagal memuat data profil');
+      } finally {
+        setLoading(false);
+      }
     };
 
-    return (
+    fetchProfile();
+  }, []);
+
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+    }).format(amount);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  };
+
+  if (loading) return <div className="text-center mt-10">Memuat profil...</div>;
+  if (error) return <div className="text-center text-red-600 mt-10">{error}</div>;
+  if (!user || !room || !contract) return <div>Tidak ada data profil.</div>;
+
+  return (
         <>
             <Head title="Profile" />
 
