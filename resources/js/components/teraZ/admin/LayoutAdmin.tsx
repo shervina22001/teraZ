@@ -20,7 +20,7 @@ const LayoutAdmin: React.FC<LayoutAdminProps> = ({
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const handleLogout = () => {
-    router.visit('/'); 
+        router.post('/logout');
     };
 
     const toggleSidebar = () => {

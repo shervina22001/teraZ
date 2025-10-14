@@ -1,14 +1,18 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Room;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
-class RoomController extends Controller
+class RoomAdminController extends Controller
 {
+    /**
+     * GET /api/admin/rooms
+     * dukung filter ?status=&tipe=&q=&per_page=
+     */
     public function index()
     {
         $q = Room::query();
@@ -20,7 +24,7 @@ class RoomController extends Controller
             $q->where('tipe', $request->string('tipe'));
         }
         if ($request->filled('q')) {
-            $s = $request->string('q');
+            $s = (string)$request->get('q');
             $q->where(function ($w) use ($s) {
                 $w->where('nomor_kamar', 'ilike', "%{$s}%")
                   ->orWhere('tipe', 'ilike', "%{$s}%")
@@ -28,10 +32,12 @@ class RoomController extends Controller
             });
         }
 
-        // $with sudah di model, jadi tenants & maintenanceRequests ikut otomatis
-        return $q->latest()->paginate((int)$request->get('per_page', 15));
+        return $q->latest()->paginate((int) $request->get('per_page', 15));
     }
 
+    /**
+     * POST /api/admin/rooms
+     */
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -46,13 +52,19 @@ class RoomController extends Controller
         return response()->json($room, 201);
     }
 
+    /**
+     * GET /api/admin/rooms/{room}
+     */
     public function show(Room $room)
     {
-        // relasi sudah eager via $with; tapi boleh explicit:
+        // jika kamu ingin kirim relasi juga:
         $room->loadMissing(['tenants','maintenanceRequests']);
         return $room;
     }
 
+    /**
+     * PUT/PATCH /api/admin/rooms/{room}
+     */
     public function update(Request $request, Room $room)
     {
         $data = $request->validate([
@@ -67,9 +79,26 @@ class RoomController extends Controller
         return response()->json($room);
     }
 
+    /**
+     * DELETE /api/admin/rooms/{room}
+     */
     public function destroy(Room $room)
     {
         $room->delete();
         return response()->json(null, 204);
+    }
+
+    /**
+     * (Opsional) PATCH /api/admin/rooms/{room}/status
+     * payload: { "status": "available|occupied|maintenance" }
+     */
+    public function updateStatus(Request $request, Room $room)
+    {
+        $data = $request->validate([
+            'status' => ['required','string', Rule::in(['available','occupied','maintenance'])],
+        ]);
+
+        $room->update(['status' => $data['status']]);
+        return response()->json($room);
     }
 }

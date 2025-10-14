@@ -1,49 +1,55 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Models\Payment;
+use App\Models\Tenant;
 use Illuminate\Http\Request;
 
 class PaymentController extends Controller
 {
-    public function index()
-    {
-        return response()->json(Payment::all(), 200);
-    }
+    public function index(Request $request)
+{
+    $user   = $request->user();
+    $tenant = \App\Models\Tenant::where('user_id', $user->id)->firstOrFail();
 
-    public function store(Request $request)
+    // order: terbaru dulu
+    return \App\Models\Payment::where('tenant_id', $tenant->id)
+        ->orderByDesc('period_year')
+        ->orderByDesc('period_month')
+        ->paginate((int)$request->get('per_page', 15));
+}
+
+    public function pay(Request $request, \App\Models\Payment $payment)
     {
-        $validated = $request->validate([
-            'tenant_id' => 'required|exists:tenants,id',
-            'payment_type' => 'required|in:monthly_rent,deposit,utility,penalty',
-            'amount' => 'required|numeric|min:0',
-            'due_date' => 'required|date',
-            'payment_date' => 'nullable|date',
-            'status' => 'in:pending,paid,overdue,cancelled',
-            'payment_method' => 'nullable|string|max:50',
-            'notes' => 'nullable|string'
+        $user   = $request->user();
+        $tenant = \App\Models\Tenant::where('user_id', $user->id)->firstOrFail();
+
+        // pastikan ini tagihan milik tenant yang login
+        if ($payment->tenant_id !== $tenant->id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        if ($payment->status === 'paid') {
+            return response()->json(['message' => 'Sudah lunas'], 422);
+        }
+
+        $data = $request->validate([
+            'method'    => ['required','string','max:50'], // transfer/qris/cash
+            'reference' => ['nullable','string','max:100'],
+            'note'      => ['nullable','string'],
         ]);
 
-        $payment = Payment::create($validated);
-        return response()->json($payment, 201);
+        $payment->update([
+            'status'   => 'paid',
+            'method'   => $data['method'],
+            'reference'=> $data['reference'] ?? null,
+            'note'     => $data['note'] ?? null,
+            'paid_at'  => now(),
+        ]);
+
+        return response()->json($payment->fresh());
     }
 
-    public function show($id)
-    {
-        return response()->json(Payment::findOrFail($id), 200);
-    }
-
-    public function update(Request $request, $id)
-    {
-        $payment = Payment::findOrFail($id);
-        $payment->update($request->all());
-        return response()->json($payment, 200);
-    }
-
-    public function destroy($id)
-    {
-        Payment::findOrFail($id)->delete();
-        return response()->json(['message' => 'Payment deleted successfully'], 200);
-    }
 }
