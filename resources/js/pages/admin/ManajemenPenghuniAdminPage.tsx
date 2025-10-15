@@ -1,12 +1,21 @@
 import React, { useState } from 'react';
+import { router } from '@inertiajs/react';
 import LayoutAdmin from '@/components/teraZ/admin/LayoutAdmin';
-import { Mail, Phone, DoorOpen, X, Edit2 } from 'lucide-react';
+import { Mail, Phone, DoorOpen, X, Edit2, Plus } from 'lucide-react';
 
 interface PenghuniAdminProps {
     user: {
         name: string;
         id: number;
     };
+    tenants: Penghuni[];
+    availableRooms?: Room[];
+}
+
+interface Room {
+    id: number;
+    nomor_kamar: string;
+    harga: number;
 }
 
 interface Penghuni {
@@ -19,48 +28,28 @@ interface Penghuni {
     photo: string;
 }
 
-const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({ user }) => {
+const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({ user, tenants: initialTenants, availableRooms = [] }) => {
     const [showEditModal, setShowEditModal] = useState(false);
+    const [showAddModal, setShowAddModal] = useState(false);
     const [selectedPenghuni, setSelectedPenghuni] = useState<Penghuni | null>(null);
     
+    // Form states for edit
     const [namaPenghuni, setNamaPenghuni] = useState('');
     const [usernamePenghuni, setUsernamePenghuni] = useState('');
     const [phonePenghuni, setPhonePenghuni] = useState('');
     const [kamarPenghuni, setKamarPenghuni] = useState('');
     const [statusPenghuni, setStatusPenghuni] = useState<'Lunas' | 'Terlambat' | 'Menunggu'>('Lunas');
-    const [fotoPenghuni, setFotoPenghuni] = useState('');
-    const [previewFoto, setPreviewFoto] = useState('');
+    
+    // Form states for add new tenant
+    const [newTenantName, setNewTenantName] = useState('');
+    const [newTenantEmail, setNewTenantEmail] = useState('');
+    const [newTenantPhone, setNewTenantPhone] = useState('');
+    const [newTenantRoomId, setNewTenantRoomId] = useState('');
+    const [newTenantStartDate, setNewTenantStartDate] = useState('');
+    const [newTenantEndDate, setNewTenantEndDate] = useState('');
+    const [newTenantNotes, setNewTenantNotes] = useState('');
 
-    const [penghunis, setPenghunis] = useState<Penghuni[]>([
-        { 
-            id: 1, 
-            name: 'Shervina', 
-            username: 'shervinaa', 
-            phone: '+62 81234567890', 
-            roomNumber: '01',
-            status: 'Lunas',
-            photo: '/teraZ/testi1.png'
-        },
-        { 
-            id: 2, 
-            name: 'Rafa', 
-            username: 'tabinarafa', 
-            phone: '+62 81234567891', 
-            roomNumber: '02',
-            status: 'Terlambat',
-            photo: '/teraZ/testi3.png'
-        },
-        { 
-            id: 3, 
-            name: 'Reghina', 
-            username: 'regghins', 
-            phone: '+62 81234567892', 
-            roomNumber: '04',
-            status: 'Terlambat',
-            photo: '/teraZ/testi2.png'
-        },
-    ]);
-
+    const penghunis = initialTenants;
     const totalPenghuni = penghunis.length;
     const pembayaranLunas = penghunis.filter(p => p.status === 'Lunas').length;
     const pendingPayment = penghunis.filter(p => p.status === 'Menunggu').length;
@@ -72,30 +61,57 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({ user }) => {
         setPhonePenghuni(penghuni.phone);
         setKamarPenghuni(penghuni.roomNumber);
         setStatusPenghuni(penghuni.status);
-        setFotoPenghuni(penghuni.photo);
-        setPreviewFoto(penghuni.photo);
         setShowEditModal(true);
     };
 
     const handleUpdatePenghuni = () => {
         if (selectedPenghuni) {
-            const updatedPenghunis = penghunis.map(p => 
-                p.id === selectedPenghuni.id 
-                    ? {
-                        ...p,
-                        name: namaPenghuni,
-                        username: usernamePenghuni,
-                        phone: phonePenghuni,
-                        roomNumber: kamarPenghuni,
-                        status: statusPenghuni,
-                        photo: fotoPenghuni || p.photo
-                    }
-                    : p
-            );
-            setPenghunis(updatedPenghunis);
-            resetForm();
-            setShowEditModal(false);
-            setSelectedPenghuni(null);
+            router.patch(`/admin/tenants/${selectedPenghuni.id}`, {
+                name: namaPenghuni,
+                username: usernamePenghuni,
+                phone: phonePenghuni,
+                roomNumber: kamarPenghuni,
+                status: statusPenghuni,
+            }, {
+                onSuccess: () => {
+                    setShowEditModal(false);
+                    setSelectedPenghuni(null);
+                    resetForm();
+                },
+                onError: (errors) => {
+                    console.error('Update failed:', errors);
+                }
+            });
+        }
+    };
+
+    const handleAddTenant = () => {
+        router.post('/admin/tenants', {
+            nama: newTenantName,
+            email: newTenantEmail,
+            kontak: newTenantPhone,
+            room_id: newTenantRoomId,
+            tanggal_mulai: newTenantStartDate,
+            tanggal_selesai: newTenantEndDate,
+            catatan: newTenantNotes,
+        }, {
+            onSuccess: () => {
+                setShowAddModal(false);
+                resetAddForm();
+            },
+            onError: (errors) => {
+                console.error('Add tenant failed:', errors);
+            }
+        });
+    };
+
+    const handleDeleteTenant = (id: number) => {
+        if (confirm('Apakah Anda yakin ingin menghapus penghuni ini?')) {
+            router.delete(`/admin/tenants/${id}`, {
+                onError: (errors) => {
+                    console.error('Delete failed:', errors);
+                }
+            });
         }
     };
 
@@ -105,40 +121,30 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({ user }) => {
         setPhonePenghuni('');
         setKamarPenghuni('');
         setStatusPenghuni('Lunas');
-        setFotoPenghuni('');
-        setPreviewFoto('');
     };
 
-    const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const result = reader.result as string;
-                setFotoPenghuni(result);
-                setPreviewFoto(result);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'Lunas':
-                return 'bg-[#2FA336]';
-            case 'Terlambat':
-                return 'bg-[#FF0000]';
-            case 'Menunggu':
-                return 'bg-[#FFA726]';
-            default:
-                return 'bg-gray-500';
-        }
+    const resetAddForm = () => {
+        setNewTenantName('');
+        setNewTenantEmail('');
+        setNewTenantPhone('');
+        setNewTenantRoomId('');
+        setNewTenantStartDate('');
+        setNewTenantEndDate('');
+        setNewTenantNotes('');
     };
 
     return (
         <LayoutAdmin user={user} currentPath="/admin/penghuni">
-            {/* Title */}
-            <div className="mb-8 mt-6">
+            {/* Title and Add Button */}
+            <div className="mb-8 mt-6 flex justify-between items-center">
+                <h1 className="text-3xl font-semibold text-[#7A2B1E]">Manajemen Penghuni Kos</h1>
+                <button
+                    onClick={() => setShowAddModal(true)}
+                    className="bg-[#6B5D52] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#654e3d] transition-colors flex items-center gap-2"
+                >
+                    <Plus className="w-5 h-5" />
+                    Tambah Penghuni
+                </button>
                 <h1 className="text-3xl font-semibold text-[#7A2B1E]">Manajemen Penghuni Kos</h1>
             </div>
 
@@ -203,9 +209,6 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({ user }) => {
 
                         {/* Status Badge and Edit Button */}
                         <div className="flex items-center gap-3">
-                            <span className={`${getStatusColor(penghuni.status)} text-white text-sm px-6 py-2 inline-block min-w-[120px] text-center`}>
-                                {penghuni.status}
-                            </span>
                             
                             {/* Edit Button */}
                             <button
@@ -237,32 +240,6 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({ user }) => {
 
                         <h2 className="text-2xl font-bold text-[#412E27] mb-6">Edit Penghuni</h2>
 
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-[#412E27] mb-2">
-                                Foto Penghuni
-                            </label>
-                            <div className="flex items-center gap-4">
-                                <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                                    {previewFoto ? (
-                                        <img 
-                                            src={previewFoto} 
-                                            alt="Preview"
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                            <Mail className="w-8 h-8" />
-                                        </div>
-                                    )}
-                                </div>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleFotoChange}
-                                    className="flex-1 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#6B5D52] file:text-white hover:file:bg-[#654e3d] file:cursor-pointer"
-                                />
-                            </div>
-                        </div>
 
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-[#412E27] mb-2">
@@ -336,6 +313,132 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({ user }) => {
                             className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#654e3d] transition-colors"
                         >
                             Update Penghuni
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Add Tenant Modal */}
+            {showAddModal && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl p-8 max-w-2xl w-full relative max-h-[90vh] overflow-y-auto">
+                        <button 
+                            onClick={() => {
+                                setShowAddModal(false);
+                                resetAddForm();
+                            }}
+                            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+
+                        <h2 className="text-2xl font-bold text-[#412E27] mb-6">Tambah Penghuni Baru</h2>
+
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-[#412E27] mb-2">
+                                Nama Lengkap <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                value={newTenantName}
+                                onChange={(e) => setNewTenantName(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E]"
+                                placeholder="Masukkan nama lengkap"
+                                required
+                            />
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-[#412E27] mb-2">
+                                Email (opsional - untuk akun login)
+                            </label>
+                            <input
+                                type="email"
+                                value={newTenantEmail}
+                                onChange={(e) => setNewTenantEmail(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E]"
+                                placeholder="email@example.com"
+                            />
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-[#412E27] mb-2">
+                                Nomor Telepon <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="tel"
+                                value={newTenantPhone}
+                                onChange={(e) => setNewTenantPhone(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E]"
+                                placeholder="+62 812345678"
+                                required
+                            />
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-[#412E27] mb-2">
+                                Pilih Kamar <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                                value={newTenantRoomId}
+                                onChange={(e) => setNewTenantRoomId(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E]"
+                                required
+                            >
+                                <option value="">Pilih kamar yang tersedia</option>
+                                {availableRooms.map((room) => (
+                                    <option key={room.id} value={room.id}>
+                                        Kamar {room.nomor_kamar} - Rp {room.harga.toLocaleString('id-ID')}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label className="block text-sm font-medium text-[#412E27] mb-2">
+                                    Tanggal Mulai <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="date"
+                                    value={newTenantStartDate}
+                                    onChange={(e) => setNewTenantStartDate(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E]"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-[#412E27] mb-2">
+                                    Tanggal Selesai <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="date"
+                                    value={newTenantEndDate}
+                                    onChange={(e) => setNewTenantEndDate(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E]"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-[#412E27] mb-2">
+                                Catatan (opsional)
+                            </label>
+                            <textarea
+                                value={newTenantNotes}
+                                onChange={(e) => setNewTenantNotes(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E] resize-none"
+                                placeholder="Catatan tambahan tentang penghuni"
+                                rows={3}
+                            />
+                        </div>
+
+                        <button
+                            onClick={handleAddTenant}
+                            className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#654e3d] transition-colors"
+                        >
+                            Tambah Penghuni
                         </button>
                     </div>
                 </div>

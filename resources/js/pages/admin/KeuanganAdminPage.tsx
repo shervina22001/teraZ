@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import LayoutAdmin from '@/components/teraZ/admin/LayoutAdmin';
 import { Calendar, CreditCard, X, Check } from 'lucide-react';
+import { router } from '@inertiajs/react';
 
 interface KeuanganAdminProps {
     user: {
@@ -73,20 +74,27 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
 
     const handleSetujuiPembayaran = () => {
         if (selectedPayment) {
-            console.log('Menyetujui pembayaran ID:', selectedPayment.id);
-            // TODO: Implementasi logika untuk approve pembayaran
-            // Contoh: Inertia.post('/admin/keuangan/approve', { id: selectedPayment.id })
-            // Setelah berhasil, item akan hilang dari tab menunggu dan pindah ke pemasukan
-            handleCloseModal();
+            router.post(`/admin/payments/${selectedPayment.id}/approve`, {}, {
+                onSuccess: () => {
+                    handleCloseModal();
+                },
+                onError: (errors) => {
+                    console.error('Approve failed:', errors);
+                }
+            });
         }
     };
 
     const handleTolakPembayaran = () => {
         if (selectedPayment) {
-            console.log('Menolak pembayaran ID:', selectedPayment.id);
-            // TODO: Implementasi logika untuk reject pembayaran
-            // Contoh: Inertia.post('/admin/keuangan/reject', { id: selectedPayment.id })
-            handleCloseModal();
+            router.post(`/admin/payments/${selectedPayment.id}/reject`, {}, {
+                onSuccess: () => {
+                    handleCloseModal();
+                },
+                onError: (errors) => {
+                    console.error('Reject failed:', errors);
+                }
+            });
         }
     };
 

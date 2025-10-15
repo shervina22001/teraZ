@@ -17,10 +17,22 @@ class Payment extends Model
         'payment_date',
         'status',
         'payment_method',
+        'reference',
         'notes',
+        'period_month',
+        'period_year',
+        'paid_at',
+    ];
+
+    protected $casts = [
+        'due_date' => 'date',
+        'payment_date' => 'date',
+        'paid_at' => 'datetime',
     ];
 
     // Relasi
-    public function tenant() { return $this->belongsTo(Tenant::class); }
-    public function room()   { return $this->belongsTo(Room::class); }
+    public function tenant() 
+    { 
+        return $this->belongsTo(Tenant::class); 
+    }
 }

@@ -6,6 +6,9 @@ use Inertia\Inertia;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoomController; // Add this for room management page
+use App\Http\Controllers\PaymentAdminController;
+use App\Http\Controllers\RentalExtensionController;
+use App\Http\Controllers\TenantController;
 
 // Landing Page
 Route::get('/', fn () => Inertia::render('LandingPage'))->name('landing');
@@ -34,8 +37,31 @@ Route::middleware(['auth', 'role:tenant'])->group(function () {
 Route::prefix('admin')->middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/dashboard', [UserController::class, 'adminDashboard'])->name('admin.dashboard');
     
-    // Add room management page route here
+    // Room Management Routes
     Route::get('/rooms', [RoomController::class, 'index'])->name('admin.rooms.index');
-    Route::patch('rooms/{room}/status', [RoomController::class, 'updateStatus']); 
-    Route::get('/rooms/{room}', [RoomController::class, 'show']);
+    Route::post('/rooms', [RoomController::class, 'store'])->name('admin.rooms.store');
+    Route::get('/rooms/{room}', [RoomController::class, 'show'])->name('admin.rooms.show');
+    Route::patch('/rooms/{room}', [RoomController::class, 'update'])->name('admin.rooms.update');
+    Route::delete('/rooms/{room}', [RoomController::class, 'destroy'])->name('admin.rooms.destroy');
+    Route::patch('/rooms/{room}/status', [RoomController::class, 'updateStatus'])->name('admin.rooms.updateStatus');
+
+    // Tenant Management Routes
+    Route::get('/tenants', [TenantController::class, 'index'])->name('admin.tenants.index');
+    Route::post('/tenants', [TenantController::class, 'store'])->name('admin.tenants.store');
+    Route::get('/tenants/{tenant}', [TenantController::class, 'show'])->name('admin.tenants.show');
+    Route::patch('/tenants/{tenant}', [TenantController::class, 'update'])->name('admin.tenants.update');
+    Route::delete('/tenants/{tenant}', [TenantController::class, 'destroy'])->name('admin.tenants.destroy');
+
+    // Payment Management Routes
+    Route::get('/keuangan', [PaymentAdminController::class, 'index'])->name('admin.payments.index');
+    Route::post('/payments/generate', [PaymentAdminController::class, 'generateMonthlyPayments'])->name('admin.payments.generate');
+    Route::post('/payments/{payment}/approve', [PaymentAdminController::class, 'approvePayment'])->name('admin.payments.approve');
+    Route::post('/payments/{payment}/reject', [PaymentAdminController::class, 'rejectPayment'])->name('admin.payments.reject');
+
+    // Rental Extension & Termination Routes
+    Route::get('/extensions', [RentalExtensionController::class, 'index'])->name('admin.extensions.index');
+    Route::post('/extensions', [RentalExtensionController::class, 'store'])->name('admin.extensions.store');
+    Route::post('/extensions/{extension}/approve', [RentalExtensionController::class, 'approve'])->name('admin.extensions.approve');
+    Route::post('/extensions/{extension}/reject', [RentalExtensionController::class, 'reject'])->name('admin.extensions.reject');
+    Route::post('/tenants/{tenant}/terminate', [RentalExtensionController::class, 'terminate'])->name('admin.tenants.terminate');
 });

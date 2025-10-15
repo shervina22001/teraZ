@@ -29,8 +29,8 @@ const LayoutAdmin: React.FC<LayoutAdminProps> = ({
 
     const menuItems = [
         { name: 'Dashboard', path: '/admin/dashboard' },
-        { name: 'Kelola Kamar', path: '/admin/kelola-kamar' },
-        { name: 'Penghuni', path: '/admin/penghuni' },
+        { name: 'Kelola Kamar', path: '/admin/rooms' },
+        { name: 'Penghuni', path: '/admin/tenants' },
         { name: 'Keuangan', path: '/admin/keuangan' },
         { name: 'Maintenance', path: '/admin/maintenance' },
     ];
