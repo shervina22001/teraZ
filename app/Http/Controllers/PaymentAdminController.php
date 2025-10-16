@@ -59,6 +59,32 @@ class PaymentAdminController extends Controller
                 ];
             });
 
+        $currentYear = now()->year;
+
+        $payments = Payment::where('status', 'paid')
+            ->where('period_year', $currentYear)
+            ->get();
+
+        // Siapkan array default 12 bulan
+        $months = collect(range(1, 12))->mapWithKeys(fn($m) => [
+            $m => ['income' => 0, 'expense' => 0]
+        ]);
+
+        foreach ($payments as $payment) {
+            $month = $payment->period_month ?? Carbon::parse($payment->paid_at)->month;
+            $months[$month]['income'] += $payment->amount;
+        }
+
+        // Format data grafik
+        $chartData = [];
+        foreach ($months as $monthNum => $values) {
+            $chartData[] = [
+                'name' => Carbon::create()->month($monthNum)->format('F'),
+                'income' => $values['income'],
+                'expense' => $values['expense'],
+            ];
+        }
+
         return Inertia::render('admin/KeuanganAdminPage', [
             'statistics' => [
                 'total_pendapatan' => $totalPendapatan,
@@ -69,6 +95,7 @@ class PaymentAdminController extends Controller
             'pemasukan' => $pemasukan,
             'pengeluaran' => $pengeluaran,
             'pending' => $pending,
+            'chartData' => $chartData,
         ]);
     }
 
@@ -133,6 +160,39 @@ class PaymentAdminController extends Controller
         }
 
         return redirect()->back()->with('success', "Generated {$generatedCount} payment(s) for this month.");
+    }
+
+    public function getMonthlyRevenue()
+    {
+        $currentYear = now()->year;
+
+        // Ambil semua pembayaran 'paid' dalam tahun ini
+        $payments = Payment::where('status', 'paid')
+            ->where('period_year', $currentYear)
+            ->get();
+
+        // Siapkan array default untuk 12 bulan
+        $months = collect(range(1, 12))->mapWithKeys(function ($month) {
+            return [$month => ['income' => 0, 'expense' => 0]];
+        });
+
+        // Hitung total pendapatan tiap bulan
+        foreach ($payments as $payment) {
+            $month = $payment->period_month;
+            $months[$month]['income'] += $payment->amount;
+        }
+
+        // Format agar mudah dipakai di Recharts
+        $formatted = [];
+        foreach ($months as $monthNum => $values) {
+            $formatted[] = [
+                'name' => Carbon::create()->month($monthNum)->format('F'),
+                'income' => $values['income'],
+                'expense' => $values['expense'],
+            ];
+        }
+
+        return response()->json($formatted);
     }
 
     // Check and mark overdue payments

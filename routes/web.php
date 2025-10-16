@@ -7,8 +7,11 @@ use App\Http\Controllers\LoginController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoomController; // Add this for room management page
 use App\Http\Controllers\PaymentAdminController;
+use App\Http\Controllers\PaymentTenantController;
 use App\Http\Controllers\RentalExtensionController;
 use App\Http\Controllers\TenantController;
+use App\Http\Controllers\MaintenanceAdminController;
+use App\Http\Controllers\MaintenanceController;
 
 // Landing Page
 Route::get('/', fn () => Inertia::render('LandingPage'))->name('landing');
@@ -29,6 +32,12 @@ Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->
 // =============================
 Route::middleware(['auth', 'role:tenant'])->group(function () {
     Route::get('/profile', [UserController::class, 'profile'])->name('profile');
+
+    Route::get('/lapor-kerusakan', [MaintenanceController::class, 'index'])->name('maintenance.index');
+    Route::post('/lapor-kerusakan', [MaintenanceController::class, 'store'])->name('maintenance.store');
+    
+    Route::get('/pembayaran', [PaymentTenantController::class, 'index'])->name('tenant.pembayaran');
+    Route::post('/pembayaran/confirm', [PaymentTenantController::class, 'confirm'])->name('tenant.pembayaran.confirm');
 });
 
 // =============================
@@ -64,4 +73,11 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/extensions/{extension}/approve', [RentalExtensionController::class, 'approve'])->name('admin.extensions.approve');
     Route::post('/extensions/{extension}/reject', [RentalExtensionController::class, 'reject'])->name('admin.extensions.reject');
     Route::post('/tenants/{tenant}/terminate', [RentalExtensionController::class, 'terminate'])->name('admin.tenants.terminate');
+
+    // Maintenance Management Routes
+    Route::get('/maintenance', [MaintenanceAdminController::class, 'index'])->name('admin.maintenance.index');
+    Route::post('/maintenance', [MaintenanceAdminController::class, 'store'])->name('admin.maintenance.store');
+    Route::patch('/maintenance/{maintenance}', [MaintenanceAdminController::class, 'update'])->name('admin.maintenance.update');
+    Route::delete('/maintenance/{maintenance}', [MaintenanceAdminController::class, 'destroy'])->name('admin.maintenance.destroy');
+
 });

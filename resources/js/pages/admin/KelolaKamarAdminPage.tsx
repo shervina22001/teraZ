@@ -89,13 +89,13 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
   };
 
   return (
-    <LayoutAdmin user={user} currentPath="/admin/kelola-kamar">
+    <LayoutAdmin user={user} currentPath="/admin/rooms">
       {/* Header and Tambah Kamar button */}
       <div className="mb-8 mt-6 flex justify-between items-center">
-        <h1 className="text-3xl font-semibold text-[#7A2B1E]">[Manajemen Kamar Kos]</h1>
+        <h1 className="text-3xl font-semibold text-[#7A2B1E]">Manajemen Kamar Kos</h1>
         <button
           onClick={() => setShowAddModal(true)}
-          className="px-6 py-3 bg-[#7A2B1E] text-white rounded-lg font-semibold hover:bg-[#5D6B1E] transition-colors"
+          className="px-6 py-3 bg-[#7A2B1E] text-white rounded-lg font-semibold hover:bg-[#561E15] transition-colors"
         >
           Tambah Kamar
         </button>
@@ -112,12 +112,12 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
               <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-[#412E27] mb-3">
-                    [Kamar] {room.number}
+                    Kamar {room.number}
                   </h3>
                   <p className="text-3xl font-bold text-[#412E27] mb-1">
                     Rp {room.price.toLocaleString('id-ID')}
                   </p>
-                  <p className="text-sm text-[#6B5D52]">[Per bulan]</p>
+                  <p className="text-sm text-[#6B5D52]">Per bulan</p>
                 </div>
                 <div className="flex flex-col items-end gap-5">
                   <span
@@ -138,18 +138,18 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
               <button
                 onClick={() => handleEdit(room)}
                 className="bg-[#654e3d] text-white p-2 rounded-lg hover:bg-[#412E27] transition-colors flex items-center gap-1"
-                aria-label="[Edit Kamar]"
+                aria-label="Edit Kamar"
               >
                 <Edit2 className="w-5 h-5" />
-                <span>[Edit]</span>
+                <span>Edit</span>
               </button>
               <button
                 onClick={() => handleDeleteRoom(room.id)}
                 className="bg-red-600 text-white p-2 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-1"
-                aria-label="[Hapus Kamar]"
+                aria-label="Hapus Kamar"
               >
                 <Trash2 className="w-5 h-5" />
-                <span>[Hapus]</span>
+                <span>Hapus</span>
               </button>
             </div>
           </div>
@@ -168,10 +168,10 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
               <X className="w-6 h-6" />
             </button>
 
-            <h2 className="text-2xl font-bold text-[#412E27] mb-6">[Edit Kamar]</h2>
+            <h2 className="text-2xl font-bold text-[#412E27] mb-6">Edit Kamar</h2>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-[#412E27] mb-2">[Nomor Kamar]</label>
+              <label className="block text-sm font-medium text-[#412E27] mb-2">Nomor Kamar</label>
               <input
                 type="text"
                 value={roomNumber}
@@ -182,7 +182,7 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-[#412E27] mb-2">[Harga per Bulan]</label>
+              <label className="block text-sm font-medium text-[#412E27] mb-2">Harga per Bulan</label>
               <input
                 type="number"
                 value={roomPrice}
@@ -193,19 +193,19 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-[#412E27] mb-2">[Status Kamar]</label>
+              <label className="block text-sm font-medium text-[#412E27] mb-2">Status Kamar</label>
               <select
                 value={roomStatus}
                 onChange={(e) => setRoomStatus(e.target.value as 'Terisi' | 'Kosong')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E]"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E] text-[#412E27]"
               >
-                <option value="Terisi">[Terisi]</option>
-                <option value="Kosong">[Kosong]</option>
+                <option value="Terisi">Terisi</option>
+                <option value="Kosong">Kosong</option>
               </select>
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-[#412E27] mb-2">[Fasilitas]</label>
+              <label className="block text-sm font-medium text-[#412E27] mb-2">Fasilitas</label>
               <textarea
                 value={roomFacilities}
                 onChange={(e) => setRoomFacilities(e.target.value)}
@@ -219,7 +219,7 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
               onClick={handleUpdateRoom}
               className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#5C4E43] transition-colors"
             >
-              [Update Kamar]
+              Update Kamar
             </button>
           </div>
         </div>
@@ -280,7 +280,7 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
                 value={newRoomFacilities}
                 onChange={(e) => setNewRoomFacilities(e.target.value)}
                 className="text-black w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E] resize-none"
-                placeholder="[Kasur, Bantal, Guling, Lemari, Kipas, Meja dan Kursi Belajar]"
+                placeholder="Kasur, Bantal, Guling, Lemari, Kipas, Meja dan Kursi Belajar"
                 rows={3}
               />
             </div>
@@ -292,7 +292,7 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
                   {
                     nomor_kamar: newRoomNumber,
                     harga: parseInt(newRoomPrice),
-                    status: newRoomStatus,
+                    statfus: newRoomStatus,
                     fasilitas: newRoomFacilities,
                     tipe: '3x3',
                   },

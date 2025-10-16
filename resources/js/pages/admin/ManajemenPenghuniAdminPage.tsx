@@ -134,7 +134,7 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({ user, tenants: initialTen
     };
 
     return (
-        <LayoutAdmin user={user} currentPath="/admin/penghuni">
+        <LayoutAdmin user={user} currentPath="/admin/tenants" title="Manajemen Penghuni - Arzeta Co-Living">
             {/* Title and Add Button */}
             <div className="mb-8 mt-6 flex justify-between items-center">
                 <h1 className="text-3xl font-semibold text-[#7A2B1E]">Manajemen Penghuni Kos</h1>
@@ -145,7 +145,6 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({ user, tenants: initialTen
                     <Plus className="w-5 h-5" />
                     Tambah Penghuni
                 </button>
-                <h1 className="text-3xl font-semibold text-[#7A2B1E]">Manajemen Penghuni Kos</h1>
             </div>
 
             {/* Statistics Cards */}
@@ -249,7 +248,7 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({ user, tenants: initialTen
                                 type="text"
                                 value={namaPenghuni}
                                 onChange={(e) => setNamaPenghuni(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E]"
+                                className="text-black w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E]"
                                 placeholder="Masukkan nama lengkap"
                             />
                         </div>
@@ -262,7 +261,7 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({ user, tenants: initialTen
                                 type="text"
                                 value={usernamePenghuni}
                                 onChange={(e) => setUsernamePenghuni(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E]"
+                                className="text-black w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E]"
                                 placeholder="Username pengguna"
                             />
                         </div>
@@ -275,7 +274,7 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({ user, tenants: initialTen
                                 type="tel"
                                 value={phonePenghuni}
                                 onChange={(e) => setPhonePenghuni(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E]"
+                                className="text-black w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E]"
                                 placeholder="+62 812345678"
                             />
                         </div>
@@ -288,7 +287,7 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({ user, tenants: initialTen
                                 type="text"
                                 value={kamarPenghuni}
                                 onChange={(e) => setKamarPenghuni(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E]"
+                                className="text-black w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E]"
                                 placeholder="01"
                             />
                         </div>
@@ -300,7 +299,7 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({ user, tenants: initialTen
                             <select
                                 value={statusPenghuni}
                                 onChange={(e) => setStatusPenghuni(e.target.value as 'Lunas' | 'Terlambat' | 'Menunggu')}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E]"
+                                className="text-black w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E]"
                             >
                                 <option value="Lunas">Lunas</option>
                                 <option value="Terlambat">Terlambat</option>

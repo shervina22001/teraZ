@@ -1,7 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import LayoutAdmin from '@/components/teraZ/admin/LayoutAdmin';
 import { Calendar, CreditCard, X, Check } from 'lucide-react';
 import { router } from '@inertiajs/react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
 
 interface KeuanganAdminProps {
     user: {
@@ -55,6 +65,33 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
     const formatRupiah = (amount: number) => {
         return `Rp ${amount.toLocaleString('id-ID')}`;
     };
+
+    const monthlyData = useMemo(() => {
+    const months = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    ];
+
+    const data = months.map((m) => ({
+      name: m,
+      income: 0,
+      expense: 0,
+    }));
+
+    pemasukan.forEach((item) => {
+      const date = new Date(item.tanggal);
+      const monthIndex = date.getMonth();
+        data[monthIndex].income += item.jumlah;
+    });
+
+    pengeluaran.forEach((item) => {
+      const date = new Date(item.tanggal);
+      const monthIndex = date.getMonth();
+        data[monthIndex].expense += item.jumlah;
+    });
+
+    return data;
+  }, [pemasukan, pengeluaran]);
 
     const handleTerimaButton = (id: number) => {
         console.log('Terima pembayaran ID:', id);
@@ -130,16 +167,55 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
             </div>
 
             {/* Chart Placeholder */}
-            <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-[#412E27]">Rp 0.000</h2>
+                  <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+                    <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-[#412E27]">
+                        Grafik Pendapatan & Pengeluaran Bulanan
+                    </h2>
                     <span className="text-sm text-[#F5A623] font-medium">Goal</span>
-                </div>
-                <div className="h-48 flex items-center justify-center text-[#6B5D52]">
-                    {/* Placeholder untuk chart - bisa diintegrasikan dengan recharts */}
-                    <p className="text-sm">Grafik pendapatan mingguan akan ditampilkan di sini</p>
-                </div>
-                <div className="flex justify-between text-xs text-[#6B5D52] mt-2">
+                    </div>
+
+                    <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                        data={monthlyData}
+                        margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
+                        >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E5E0DA" />
+                        <XAxis dataKey="name" stroke="#6B5D52" />
+                        <YAxis stroke="#6B5D52" />
+                        <Tooltip
+                            formatter={(value: number) => formatRupiah(value)}
+                            contentStyle={{
+                            backgroundColor: "#fff",
+                            border: "1px solid #D1C7BC",
+                            borderRadius: "8px",
+                            }}
+                        />
+                        <Legend verticalAlign="top" height={36} />
+                        <Line
+                            type="monotone"
+                            dataKey="income"
+                            name="Pemasukan"
+                            stroke="#2FA336"
+                            strokeWidth={3}
+                            dot={{ r: 5 }}
+                            activeDot={{ r: 7 }}
+                        />
+                        <Line
+                            type="monotone"
+                            dataKey="expense"
+                            name="Pengeluaran"
+                            stroke="#A75B3E"
+                            strokeWidth={3}
+                            dot={{ r: 5 }}
+                            activeDot={{ r: 7 }}
+                        />
+                        </LineChart>
+                    </ResponsiveContainer>
+                    </div>
+
+                    <div className="flex justify-between text-xs text-[#6B5D52] mt-2">
                     <span>Sunday</span>
                     <span>Monday</span>
                     <span>Tuesday</span>
@@ -147,8 +223,8 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
                     <span>Thursday</span>
                     <span>Friday</span>
                     <span>Saturday</span>
+                    </div>
                 </div>
-            </div>
 
             {/* Tabs */}
             <div className="flex gap-4 mb-6">

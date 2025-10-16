@@ -9,7 +9,6 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\RoomController;
-use App\Http\Controllers\TenantController;
 
 class TenantController extends Controller
 {
