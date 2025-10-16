@@ -2,48 +2,45 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Tenant extends Model
 {
-    use HasFactory;
+    protected $table = 'tenants';
 
     protected $fillable = [
         'user_id',
         'room_id',
-        'identity_number',
-        'emergency_contact',
-        'emergency_phone',
-        'start_date',
-        'end_date',
-        'deposit',
-        'status',
+        'nama',
+        'kontak',
+        'tanggal_mulai',
+        'tanggal_selesai',
+        'status',     // aktif, selesai, dibatalkan
+        'catatan',
     ];
 
-    // Relasi
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
+    protected $casts = [
+        'tanggal_mulai' => 'date',
+        'tanggal_selesai' => 'date',
+    ];
 
-    public function room()
-    {
-        return $this->belongsTo(Room::class);
+    public function user() 
+    { 
+        return $this->belongsTo(User::class); 
     }
-
-    public function payments()
-    {
-        return $this->hasMany(Payment::class);
+    
+    public function room() 
+    { 
+        return $this->belongsTo(Room::class, 'room_id'); 
     }
-
-    public function rentalExtensions()
-    {
-        return $this->hasMany(RentalExtension::class);
+    
+    public function payments() 
+    { 
+        return $this->hasMany(Payment::class); 
     }
-
-    public function maintenanceRequests()
-    {
-        return $this->hasMany(MaintenanceRequest::class);
+    
+    public function rentalExtensions() 
+    { 
+        return $this->hasMany(RentalExtension::class); 
     }
 }

@@ -4,9 +4,6 @@
   <head>
     <title>Laravel API</title>
   </head>
-  <body>
-    <h1>Laravel API is running 🚀</h1>
-  </body>
 </html>
 
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') == 'dark'])>

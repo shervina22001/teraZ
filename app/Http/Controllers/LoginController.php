@@ -11,33 +11,66 @@ class LoginController extends Controller
     public function show()
     {
         return Inertia::render('LoginPage');
-    }
+    }   
 
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'username' => 'required|string',
-            'password' => 'required|string',
+            'username' => ['required', 'string'],
+            'password' => ['required', 'string'],
         ]);
 
-        if (Auth::attempt($credentials)) {
-            $request->session()->regenerate();
-
-            // Pakai Inertia::location supaya homepage reload dan props terbaru diambil
-            return Inertia::location('/');
+        if (!Auth::attempt($credentials, $request->boolean('remember'))) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'message' => 'Username atau password salah'
+                ], 401);
+            }
+            return back()->withErrors([
+                'username' => 'Username atau password salah'
+            ])->onlyInput('username');
         }
 
-        return back()->withErrors([
-            'username' => 'Username atau password salah',
-        ]);
+        $request->session()->regenerate();
+
+        $user = Auth::user();
+        $role = strtolower($user->role);
+        
+        // Tentukan redirect berdasarkan role
+        $next = match($role) {
+            'admin' => route('admin.dashboard'),
+            'user' => route('profile'),
+            default => route('profile'),
+        };
+
+        // Untuk request JSON (dari frontend React/Inertia)
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Login berhasil',
+                'next' => $next,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'username' => $user->username,
+                    'phone' => $user->phone,
+                    'role' => $user->role,
+                ],
+            ], 200);
+        }
+
+        // Untuk form submit biasa
+        return redirect($next);
     }
 
     public function logout(Request $request)
     {
         Auth::logout();
+        
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-
-        return Inertia::location('/'); // redirect ke landing page
+        
+        return redirect('/');
     }
+
+
 }

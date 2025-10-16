@@ -36,30 +36,21 @@ class HandleInertiaRequests extends Middleware
      *
      * @return array<string, mixed>
      */
-    public function share(Request $request): array
+   public function share(Request $request): array
     {
-        $quoteParts = Str::of(Inspiring::quotes()->random())->explode('-');
-        $message = trim($quoteParts[0] ?? '');
-        $author = trim($quoteParts[1] ?? 'Unknown');
-
-        $user = Auth::user();
-
-        return array_merge(parent::share($request), [
-            'name' => config('app.name'),
-            'quote' => [
-                'message' => $message,
-                'author' => $author,
-            ],
-            'auth' => [
-                'user' => Auth::user() ? [
-                    'id' => Auth::user()->id,
-                    'name' => Auth::user()->name,
-                    'email' => Auth::user()->email,
-                    'username' => Auth::user()->username,
-                    'role' => Auth::user()->role ?? 'user',
-                    ] : null,
-            ],
-            'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
-        ]);
-    }
+    return array_merge(parent::share($request), [
+        'auth' => [
+            'user' => $request->user() ? [
+                'id' => $request->user()->id,
+                'name' => $request->user()->name,
+                'username' => $request->user()->username,
+                'role' => $request->user()->role,
+            ] : null,
+        ],
+        'flash' => [
+            'success' => fn () => $request->session()->get('success'),
+            'error'   => fn () => $request->session()->get('error'),
+        ],
+    ]);
+}
 }

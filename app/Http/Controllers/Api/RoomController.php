@@ -1,68 +1,75 @@
 <?php
 
-namespace App\Http\Controllers\API;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Models\Room;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 
 class RoomController extends Controller
 {
-    public function register(Request $request)
+    public function index()
     {
-        $data = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6',
-        ]);
+        $q = Room::query();
 
-        $user = User::create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
-            'password' => bcrypt($data['password']),
-        ]);
-
-        return response()->json([
-            'message' => 'User registered successfully',
-            'user'    => $user
-        ], 201);
-    }
-
-    public function login(Request $request)
-    {
-        $data = $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required',
-        ]);
-
-        $user = User::where('email', $data['email'])->first();
-
-        if (!$user || !Hash::check($data['password'], $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['The credentials are incorrect.'],
-            ]);
+        if ($request->filled('status')) {
+            $q->where('status', $request->string('status'));
+        }
+        if ($request->filled('tipe')) {
+            $q->where('tipe', $request->string('tipe'));
+        }
+        if ($request->filled('q')) {
+            $s = $request->string('q');
+            $q->where(function ($w) use ($s) {
+                $w->where('nomor_kamar', 'ilike', "%{$s}%")
+                  ->orWhere('tipe', 'ilike', "%{$s}%")
+                  ->orWhere('fasilitas', 'ilike', "%{$s}%");
+            });
         }
 
-        $token = $user->createToken('api_token')->plainTextToken;
+        // $with sudah di model, jadi tenants & maintenanceRequests ikut otomatis
+        return $q->latest()->paginate((int)$request->get('per_page', 15));
+    }
 
-        return response()->json([
-            'access_token' => $token,
-            'token_type'   => 'Bearer',
-            'user'         => $user,
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'nomor_kamar' => ['required','string','max:50','unique:rooms,nomor_kamar'],
+            'tipe'        => ['required','string','max:100'],
+            'harga'       => ['required','integer','min:0'],
+            'status'      => ['required','string', Rule::in(['available','occupied','maintenance'])],
+            'fasilitas'   => ['nullable','string'],
         ]);
+
+        $room = Room::create($data);
+        return response()->json($room, 201);
     }
 
-    public function logout(Request $request)
+    public function show(Room $room)
     {
-        $request->user()->tokens()->delete();
-
-        return response()->json(['message' => 'Logged out']);
+        // relasi sudah eager via $with; tapi boleh explicit:
+        $room->loadMissing(['tenants','maintenanceRequests']);
+        return $room;
     }
 
-    public function me(Request $request)
+    public function update(Request $request, Room $room)
     {
-        return response()->json($request->user());
+        $data = $request->validate([
+            'nomor_kamar' => ['sometimes','string','max:50', Rule::unique('rooms','nomor_kamar')->ignore($room->id)],
+            'tipe'        => ['sometimes','string','max:100'],
+            'harga'       => ['sometimes','integer','min:0'],
+            'status'      => ['sometimes','string', Rule::in(['available','occupied','maintenance'])],
+            'fasilitas'   => ['nullable','string'],
+        ]);
+
+        $room->update($data);
+        return response()->json($room);
+    }
+
+    public function destroy(Room $room)
+    {
+        $room->delete();
+        return response()->json(null, 204);
     }
 }

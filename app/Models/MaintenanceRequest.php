@@ -2,33 +2,27 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class MaintenanceRequest extends Model
 {
-    use HasFactory;
+    protected $table = 'maintenance_requests';
 
     protected $fillable = [
-        'tenant_id',
+        
         'room_id',
-        'title',
-        'description',
-        'priority',
-        'status',
-        'reported_at',
-        'completed_at',
-        'notes',
+        'judul',
+        'deskripsi',
+        'status',   // pending, in_progress, done
+        'biaya',
+        'dilaporkan_pada',
     ];
 
-    // Relasi
-    public function tenant()
-    {
-        return $this->belongsTo(Tenant::class);
-    }
+    protected $casts = [
+        'biaya' => 'integer',
+        'dilaporkan_pada' => 'datetime',
+    ];
 
-    public function room()
-    {
-        return $this->belongsTo(Room::class);
-    }
+    public function tenant() { return $this->belongsTo(Tenant::class); }
+    public function room()   { return $this->belongsTo(Room::class); }
 }

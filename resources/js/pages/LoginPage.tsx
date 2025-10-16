@@ -10,15 +10,12 @@ interface LoginFormData {
 interface LoginResponse {
   message: string;
   access_token?: string;
-  token_type?: string;
   user?: {
     id: number;
     name: string;
     username: string;
-    email?: string;
     role?: string;
   };
-  token?: string;
 }
 
 interface LoginError {
@@ -34,12 +31,11 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ username?: string; password?: string; general?: string }>({});
 
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-
     if (errors[name as keyof typeof errors]) {
       setErrors(prev => ({ ...prev, [name]: undefined, general: undefined }));
     }
@@ -47,17 +43,9 @@ const LoginPage: React.FC = () => {
 
   const validateForm = (): boolean => {
     const newErrors: { username?: string; password?: string } = {};
-
-    if (!formData.username.trim()) {
-      newErrors.username = 'Username harus diisi';
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'Password harus diisi';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password minimal 6 karakter';
-    }
-
+    if (!formData.username.trim()) newErrors.username = 'Username harus diisi';
+    if (!formData.password) newErrors.password = 'Password harus diisi';
+    else if (formData.password.length < 6) newErrors.password = 'Password minimal 6 karakter';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -65,62 +53,46 @@ const LoginPage: React.FC = () => {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrors({});
-
     if (!validateForm()) return;
+
     setLoading(true);
 
     try {
       const response = await axios.post<LoginResponse>(
-        `${API_BASE}/api/login`,
+        `${API_BASE}/login`,
         formData,
         {
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          withCredentials: true, // pastikan cookie/session dikirim
         }
       );
 
       if (response.status === 200) {
         const data = response.data;
 
-        if (data.access_token) {
-          localStorage.setItem('auth_token', data.access_token);
-        }
+        // Simpan token & user
+        if (data.access_token) localStorage.setItem('auth_token', data.access_token);
+        if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
 
-        if (data.user) {
-          localStorage.setItem('user', JSON.stringify(data.user));
-        }
-
-        // Redirect ke halaman utama
-        window.location.href = '/profile';
-      } else {
-        setErrors({ general: 'Login gagal. Coba lagi.' });
+        // --- Redirect sesuai role (tombol Back tetap bisa) ---
+        const role = data.user?.role?.toLowerCase();
+        if (role === 'admin') window.location.href = '/admin/dashboard';
+        else window.location.href = '/profile';
       }
     } catch (err) {
       const axiosError = err as AxiosError<LoginError>;
-
       if (axiosError.response) {
         const status = axiosError.response.status;
         const data = axiosError.response.data;
-
-        if (status === 401) {
-          setErrors({ general: 'Username atau password salah' });
-        } else if (status === 422) {
+        if (status === 401) setErrors({ general: 'Username atau password salah' });
+        else if (status === 422) {
           const validationErrors: { username?: string; password?: string } = {};
           if (data.errors?.username) validationErrors.username = data.errors.username[0];
           if (data.errors?.password) validationErrors.password = data.errors.password[0];
           setErrors(validationErrors);
-        } else if (status >= 500) {
-          setErrors({ general: 'Terjadi kesalahan server. Silakan coba lagi nanti' });
-        } else {
-          setErrors({ general: data.message || 'Login gagal. Silakan coba lagi' });
-        }
-      } else if (axiosError.request) {
-        setErrors({ general: 'Tidak dapat terhubung ke server. Periksa koneksi Anda.' });
-      } else {
-        setErrors({ general: 'Terjadi kesalahan tidak terduga.' });
-      }
+        } else setErrors({ general: data.message || 'Login gagal. Silakan coba lagi' });
+      } else if (axiosError.request) setErrors({ general: 'Tidak dapat terhubung ke server.' });
+      else setErrors({ general: 'Terjadi kesalahan tidak terduga.' });
     } finally {
       setLoading(false);
     }

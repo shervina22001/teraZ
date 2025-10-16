@@ -2,30 +2,33 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Room extends Model
 {
-    use HasFactory;
+    protected $table = 'rooms';
 
     protected $fillable = [
-        'room_number',
-        'room_type',
-        'price',
-        'facilities',
+        'nomor_kamar',
+        'tipe',
+        'harga',
         'status',
-        'description',
+        'fasilitas',
     ];
 
-    // Relasi
+    // Eager-load relasi ini setiap kali ambil Room
+    protected $with = ['tenants', 'maintenanceRequests'];
+
     public function tenants()
     {
-        return $this->hasMany(Tenant::class);
+        // FK: tenants.room_id → rooms.id
+        return $this->hasMany(Tenant::class, 'room_id', 'id');
     }
 
     public function maintenanceRequests()
     {
-        return $this->hasMany(MaintenanceRequest::class);
+        // FK: maintenance_requests.room_id → rooms.id
+        return $this->hasMany(MaintenanceRequest::class, 'room_id', 'id');
     }
 }
