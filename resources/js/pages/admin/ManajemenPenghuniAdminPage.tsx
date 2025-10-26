@@ -76,10 +76,12 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({ user, tenants: initialTen
                 onSuccess: () => {
                     setShowEditModal(false);
                     setSelectedPenghuni(null);
-                    resetForm();
+                    alert("Update Berhasil!"); 
+                    window.location.reload();
                 },
                 onError: (errors) => {
                     console.error('Update failed:', errors);
+                    alert("Update gagal, silakan coba lagi.");
                 }
             });
         }

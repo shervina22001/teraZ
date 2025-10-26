@@ -40,28 +40,33 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
     setShowEditModal(true);
   };
 
-  const handleUpdateRoom = () => {
-    if (selectedRoom) {
-      router.patch(
-        `/admin/rooms/${selectedRoom.id}`,
-        {
-          number: roomNumber,
-          price: parseInt(roomPrice),
-          facilities: roomFacilities,
-          status: roomStatus,
+  
+const handleUpdateRoom = () => {
+  if (selectedRoom) {
+    router.patch(
+      `/admin/rooms/${selectedRoom.id}`,
+      {
+        number: roomNumber,
+        price: parseInt(roomPrice),
+        facilities: roomFacilities,
+        status: roomStatus,
+      },
+      {
+        onSuccess: () => {
+          setShowEditModal(false);
+          setSelectedRoom(null);
+          alert("Update berhasil!");
+          window.location.reload(); // reload halaman otomatis setelah klik OK
         },
-        {
-          onSuccess: () => {
-            setShowEditModal(false);
-            setSelectedRoom(null);
-          },
-          onError: (errors) => {
-            console.error('Update failed:', errors);
-          },
-        }
-      );
-    }
-  };
+        onError: (errors) => {
+          console.error("Update failed:", errors);
+          alert("Update gagal, silakan coba lagi.");
+        },
+      }
+    );
+  }
+};
+
 
   const handleDeleteRoom = (id: number) => {
     if (confirm('Apakah Anda yakin ingin menghapus kamar ini?')) {
@@ -292,7 +297,7 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
                   {
                     nomor_kamar: newRoomNumber,
                     harga: parseInt(newRoomPrice),
-                    statfus: newRoomStatus,
+                    status: newRoomStatus,
                     fasilitas: newRoomFacilities,
                     tipe: '3x3',
                   },
