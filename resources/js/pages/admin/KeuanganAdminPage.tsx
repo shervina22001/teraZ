@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import LayoutAdmin from '@/components/teraZ/admin/LayoutAdmin';
-import { Calendar, CreditCard, X, Check } from 'lucide-react';
+import { Calendar, CreditCard, X, Check, TrendingUp, AlertTriangle } from 'lucide-react';
 import { router } from '@inertiajs/react';
 import {
   LineChart,
@@ -11,6 +11,9 @@ import {
   CartesianGrid,
   ResponsiveContainer,
   Legend,
+  BarChart,
+  Bar,
+  Cell,
 } from "recharts";
 
 interface KeuanganAdminProps {
@@ -47,6 +50,13 @@ interface KeuanganAdminProps {
         jumlah: number;
         bukti_pembayaran?: string;
     }>;
+    maintenance?: Array<{
+        id: number;
+        kamar: string;
+        judul: string;
+        tanggal: string;
+        status: string;
+    }>;
 }
 
 type TabType = 'Pemasukan' | 'Pengeluaran' | 'Menunggu';
@@ -56,7 +66,8 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
     statistics,
     pemasukan,
     pengeluaran,
-    pending 
+    pending,
+    maintenance = []
 }) => {
     const [activeTab, setActiveTab] = useState<TabType>('Pemasukan');
     const [showModal, setShowModal] = useState(false);
@@ -92,6 +103,84 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
 
     return data;
   }, [pemasukan, pengeluaran]);
+
+    // Analisis untuk rekomendasi harga
+    const priceAnalysis = useMemo(() => {
+        const totalIncome = pemasukan.reduce((sum, item) => sum + item.jumlah, 0);
+        const totalExpense = pengeluaran.reduce((sum, item) => sum + item.jumlah, 0);
+        const netProfit = totalIncome - totalExpense;
+        const profitMargin = totalIncome > 0 ? (netProfit / totalIncome) * 100 : 0;
+
+        // Hitung biaya maintenance per bulan
+        const maintenanceCosts = pengeluaran.filter(item => 
+            item.kategori?.toLowerCase().includes('maintenance') || 
+            item.kategori?.toLowerCase().includes('perbaikan')
+        );
+        const totalMaintenanceCost = maintenanceCosts.reduce((sum, item) => sum + item.jumlah, 0);
+        const maintenanceFrequency = maintenance.length;
+
+        // Analisis tren pengeluaran
+        const last3MonthsExpenses = monthlyData.slice(-3).reduce((sum, m) => sum + m.expense, 0);
+        const avgMonthlyExpense = last3MonthsExpenses / 3;
+        const avgMonthlyIncome = monthlyData.slice(-3).reduce((sum, m) => sum + m.income, 0) / 3;
+
+        // Rekomendasi
+        let recommendation = 'Stabil';
+        let recommendationColor = '#2FA336';
+        let priceIncreasePercentage = 0;
+        let reason = '';
+
+        if (profitMargin < 15) {
+            recommendation = 'Perlu Kenaikan Harga';
+            recommendationColor = '#FF0000';
+            priceIncreasePercentage = 15 - profitMargin;
+            reason = `Margin keuntungan hanya ${profitMargin.toFixed(1)}% (di bawah standar 15%)`;
+        } else if (profitMargin < 25 && totalMaintenanceCost > avgMonthlyIncome * 0.3) {
+            recommendation = 'Pertimbangkan Kenaikan';
+            recommendationColor = '#F5A623';
+            priceIncreasePercentage = 10;
+            reason = `Biaya maintenance tinggi (${((totalMaintenanceCost / totalIncome) * 100).toFixed(1)}% dari pendapatan)`;
+        } else if (avgMonthlyExpense > avgMonthlyIncome * 0.7) {
+            recommendation = 'Waspada';
+            recommendationColor = '#F5A623';
+            priceIncreasePercentage = 8;
+            reason = `Pengeluaran mendekati ${((avgMonthlyExpense / avgMonthlyIncome) * 100).toFixed(0)}% dari pemasukan`;
+        } else if (profitMargin >= 25) {
+            recommendation = 'Kondisi Baik';
+            recommendationColor = '#2FA336';
+            reason = `Margin keuntungan sehat (${profitMargin.toFixed(1)}%)`;
+        }
+
+        return {
+            profitMargin,
+            totalMaintenanceCost,
+            maintenanceFrequency,
+            recommendation,
+            recommendationColor,
+            priceIncreasePercentage,
+            reason,
+            avgMonthlyExpense,
+            avgMonthlyIncome,
+        };
+    }, [pemasukan, pengeluaran, maintenance, monthlyData]);
+
+    // Data untuk grafik breakdown pengeluaran
+    const expenseBreakdown = useMemo(() => {
+        const categories = new Map<string, number>();
+        
+        pengeluaran.forEach(item => {
+            const category = item.kategori || 'Lainnya';
+            categories.set(category, (categories.get(category) || 0) + item.jumlah);
+        });
+
+        return Array.from(categories.entries()).map(([name, value]) => ({
+            name,
+            value,
+            percentage: ((value / statistics.total_pengeluaran) * 100).toFixed(1)
+        })).sort((a, b) => b.value - a.value);
+    }, [pengeluaran, statistics.total_pengeluaran]);
+
+    const COLORS = ['#A75B3E', '#7A2B1E', '#8B9A7A', '#214423', '#6B5D52'];
 
     const handleTerimaButton = (id: number) => {
         console.log('Terima pembayaran ID:', id);
@@ -225,6 +314,122 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
                     <span>Saturday</span>
                     </div>
                 </div>
+
+            {/* GRAFIK ANALISIS REKOMENDASI HARGA - BAGIAN BARU */}
+            <div className="grid grid-cols-3 gap-6 mb-8">
+                {/* Card Rekomendasi */}
+                <div className="bg-white rounded-lg shadow-sm p-6 col-span-1">
+                    <div className="flex items-center gap-3 mb-4">
+                        <TrendingUp className="w-6 h-6" style={{ color: priceAnalysis.recommendationColor }} />
+                        <h2 className="text-lg font-semibold text-[#412E27]">Analisis Harga</h2>
+                    </div>
+
+                    <div 
+                        className="rounded-lg p-4 mb-4"
+                        style={{ backgroundColor: `${priceAnalysis.recommendationColor}15` }}
+                    >
+                        <p className="text-sm text-[#6B5D52] mb-1">Status</p>
+                        <p 
+                            className="text-2xl font-bold mb-2"
+                            style={{ color: priceAnalysis.recommendationColor }}
+                        >
+                            {priceAnalysis.recommendation}
+                        </p>
+                        <p className="text-sm text-[#412E27]">{priceAnalysis.reason}</p>
+                    </div>
+
+                    <div className="space-y-3">
+                        <div className="bg-[#F5F2EE] rounded-lg p-3">
+                            <p className="text-xs text-[#6B5D52] mb-1">Margin Keuntungan</p>
+                            <p className="text-xl font-bold text-[#412E27]">
+                                {priceAnalysis.profitMargin.toFixed(1)}%
+                            </p>
+                        </div>
+
+                        <div className="bg-[#F5F2EE] rounded-lg p-3">
+                            <p className="text-xs text-[#6B5D52] mb-1">Biaya Maintenance</p>
+                            <p className="text-xl font-bold text-[#412E27]">
+                                {formatRupiah(priceAnalysis.totalMaintenanceCost)}
+                            </p>
+                            <p className="text-xs text-[#6B5D52] mt-1">
+                                {priceAnalysis.maintenanceFrequency} laporan
+                            </p>
+                        </div>
+
+                        {priceAnalysis.priceIncreasePercentage > 0 && (
+                            <div 
+                                className="rounded-lg p-3 border-2"
+                                style={{ 
+                                    borderColor: priceAnalysis.recommendationColor,
+                                    backgroundColor: `${priceAnalysis.recommendationColor}10`
+                                }}
+                            >
+                                <div className="flex items-center gap-2 mb-1">
+                                    <AlertTriangle className="w-4 h-4" style={{ color: priceAnalysis.recommendationColor }} />
+                                    <p className="text-xs font-semibold" style={{ color: priceAnalysis.recommendationColor }}>
+                                        Rekomendasi Kenaikan
+                                    </p>
+                                </div>
+                                <p className="text-2xl font-bold" style={{ color: priceAnalysis.recommendationColor }}>
+                                    +{priceAnalysis.priceIncreasePercentage.toFixed(0)}%
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Grafik Breakdown Pengeluaran */}
+                <div className="bg-white rounded-lg shadow-sm p-6 col-span-2">
+                    <h2 className="text-lg font-semibold text-[#412E27] mb-4">
+                        Breakdown Pengeluaran per Kategori
+                    </h2>
+                    
+                    <div className="h-64">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                                data={expenseBreakdown}
+                                margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
+                            >
+                                <CartesianGrid strokeDasharray="3 3" stroke="#E5E0DA" />
+                                <XAxis 
+                                    dataKey="name" 
+                                    stroke="#6B5D52"
+                                    angle={-15}
+                                    textAnchor="end"
+                                    height={80}
+                                />
+                                <YAxis stroke="#6B5D52" />
+                                <Tooltip
+                                    formatter={(value: number) => formatRupiah(value)}
+                                    contentStyle={{
+                                        backgroundColor: "#fff",
+                                        border: "1px solid #D1C7BC",
+                                        borderRadius: "8px",
+                                    }}
+                                />
+                                <Bar dataKey="value" name="Pengeluaran" radius={[8, 8, 0, 0]}>
+                                    {expenseBreakdown.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 mt-4">
+                        {expenseBreakdown.slice(0, 4).map((item, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                                <div 
+                                    className="w-3 h-3 rounded-full"
+                                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                                />
+                                <span className="text-sm text-[#412E27]">{item.name}</span>
+                                <span className="text-xs text-[#6B5D52] ml-auto">{item.percentage}%</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
 
             {/* Tabs */}
             <div className="flex gap-4 mb-6">

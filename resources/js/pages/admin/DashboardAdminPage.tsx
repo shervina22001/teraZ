@@ -1,6 +1,6 @@
 import React from 'react';
 import LayoutAdmin from '@/components/teraZ/admin/LayoutAdmin';
-import { BedDouble, Users, SquarePen, NotebookText, Wallet, ChartNoAxesCombined } from 'lucide-react';
+import { BedDouble, Users, TriangleAlert, NotebookText, Wallet, ChartNoAxesCombined } from 'lucide-react';
 
 interface DashboardAdminProps {
     user: {
@@ -25,7 +25,7 @@ const DashboardAdmin: React.FC<DashboardAdminProps> = ({ user }) => {
             <div className="grid grid-cols-3 gap-8 mb-10">
 
             {/* Total Kamar */}
-            <div className="bg-[#513A32] rounded-lg p-6 text-[#F5F2EE]">
+            <div className="bg-[#49493A] rounded-lg p-6 text-[#F5F2EE]">
                 <div className="flex justify-between items-center">
                 <div>
                     <h3 className="text-lg font-medium mb-3">Total Kamar</h3>
@@ -53,7 +53,7 @@ const DashboardAdmin: React.FC<DashboardAdminProps> = ({ user }) => {
             </div>
 
             {/* Pembayaran Pending */}
-            <div className="bg-[#513A32] rounded-lg p-6 text-[#F5F2EE]">
+            <div className="bg-red-900 rounded-lg p-6 text-[#F5F2EE]">
                 <div className="flex justify-between items-center">
                 <div>
                     <h3 className="text-lg font-medium mb-3">Pembayaran Pending</h3>
@@ -61,7 +61,7 @@ const DashboardAdmin: React.FC<DashboardAdminProps> = ({ user }) => {
                     <p className="text-sm mt-3 opacity-90">Memerlukan Perhatian</p>
                 </div>
                 <div className="flex items-center justify-center">
-                    <SquarePen className="w-12 h-12" strokeWidth={1.5} />
+                    <TriangleAlert className="w-12 h-12" strokeWidth={1.5} />
                 </div>
                 </div>
             </div>
@@ -81,7 +81,7 @@ const DashboardAdmin: React.FC<DashboardAdminProps> = ({ user }) => {
             </div>
 
             {/* Pendapatan Bulan Ini */}
-            <div className="bg-[#513A32] rounded-lg p-6 text-[#F5F2EE]">
+            <div className="bg-[#49493A] rounded-lg p-6 text-[#F5F2EE]">
                 <div className="flex justify-between items-center">
                 <div>
                     <h3 className="text-lg font-medium mb-3">Pendapatan Bulan Ini</h3>

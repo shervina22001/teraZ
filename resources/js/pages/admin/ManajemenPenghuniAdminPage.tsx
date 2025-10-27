@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { router } from '@inertiajs/react';
 import LayoutAdmin from '@/components/teraZ/admin/LayoutAdmin';
-import { Mail, Phone, DoorOpen, X, Edit2, Plus } from 'lucide-react';
+import { Mail, Phone, DoorOpen, X, Edit2, Plus, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface PenghuniAdminProps {
     user: {
@@ -32,6 +32,13 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({ user, tenants: initialTen
     const [showEditModal, setShowEditModal] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [selectedPenghuni, setSelectedPenghuni] = useState<Penghuni | null>(null);
+    
+    // Custom Alert States
+    const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+    const [showErrorAlert, setShowErrorAlert] = useState(false);
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+    const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
     
     // Form states for edit
     const [namaPenghuni, setNamaPenghuni] = useState('');
@@ -76,12 +83,16 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({ user, tenants: initialTen
                 onSuccess: () => {
                     setShowEditModal(false);
                     setSelectedPenghuni(null);
-                    alert("Update Berhasil!"); 
-                    window.location.reload();
+                    setAlertMessage("Update Berhasil!");
+                    setShowSuccessAlert(true);
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
                 },
                 onError: (errors) => {
                     console.error('Update failed:', errors);
-                    alert("Update gagal, silakan coba lagi.");
+                    setAlertMessage("Update gagal, silakan coba lagi.");
+                    setShowErrorAlert(true);
                 }
             });
         }
@@ -100,21 +111,42 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({ user, tenants: initialTen
             onSuccess: () => {
                 setShowAddModal(false);
                 resetAddForm();
+                setAlertMessage("Penghuni berhasil ditambahkan!");
+                setShowSuccessAlert(true);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
             },
             onError: (errors) => {
                 console.error('Add tenant failed:', errors);
+                setAlertMessage("Gagal menambahkan penghuni, silakan coba lagi.");
+                setShowErrorAlert(true);
             }
         });
     };
 
     const handleDeleteTenant = (id: number) => {
-        if (confirm('Apakah Anda yakin ingin menghapus penghuni ini?')) {
-            router.delete(`/admin/tenants/${id}`, {
+        setPendingDeleteId(id);
+        setShowConfirmDialog(true);
+    };
+
+    const confirmDelete = () => {
+        if (pendingDeleteId) {
+            router.delete(`/admin/tenants/${pendingDeleteId}`, {
                 onError: (errors) => {
                     console.error('Delete failed:', errors);
+                    setAlertMessage("Gagal menghapus penghuni.");
+                    setShowErrorAlert(true);
                 }
             });
         }
+        setShowConfirmDialog(false);
+        setPendingDeleteId(null);
+    };
+
+    const cancelDelete = () => {
+        setShowConfirmDialog(false);
+        setPendingDeleteId(null);
     };
 
     const resetForm = () => {
@@ -168,10 +200,10 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({ user, tenants: initialTen
             {/* Penghuni List */}
             <div className="space-y-6">
                 {penghunis.map((penghuni) => (
-                    <div key={penghuni.id} className="bg-[#F5F2EE] rounded-lg shadow-sm px-8 py-8 flex items-center justify-between">
+                    <div key={penghuni.id} className="bg-[#F5F2EE] rounded-lg shadow-sm px-8 py-6 flex items-center justify-between">
                         <div className="flex items-center gap-6 flex-1">
                             {/* Photo */}
-                            <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                            <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
                                 <img 
                                     src={penghuni.photo} 
                                     alt={penghuni.name}
@@ -179,39 +211,47 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({ user, tenants: initialTen
                                 />
                             </div>
 
-                            {/* Info Section */}
+                            {/* Info Section - Full Width Layout */}
                             <div className="flex-1">
-                                {/* Name */}
-                                <h3 className="text-xl font-semibold text-[#412E27] mb-3">{penghuni.name}</h3>
-                                
-                                
-                                {/* Contact Details */}
-                                <div className="flex items-center gap-6">
-                                    {/* Username */}
-                                    <div className="flex items-center gap-2 w-34">
-                                        <Mail className="w-5 h-5 text-[#6B5D52]" />
-                                        <span className="text-base font-medium text-[#6B5D52]">{penghuni.username}</span>
+                                <div className="grid grid-cols-4 gap-8 items-center">
+                                    {/* Name */}
+                                    <div>
+                                        <p className="text-xs text-[#6B5D52] mb-1 uppercase tracking-wide">NAMA</p>
+                                        <h3 className="text-lg font-semibold text-[#412E27]">{penghuni.name}</h3>
+                                    </div>
+
+                                    {/* Email */}
+                                    <div className="flex items-center gap-3">
+                                        <Mail className="w-5 h-5 text-[#6B5D52] flex-shrink-0" />
+                                        <div>
+                                            <p className="text-xs text-[#6B5D52] mb-1 uppercase tracking-wide">EMAIL</p>
+                                            <span className="text-base font-medium text-[#412E27]">{penghuni.username}</span>
+                                        </div>
                                     </div>
 
                                     {/* Phone */}
-                                    <div className="flex items-center gap-2 w-48">
-                                        <Phone className="w-5 h-5 text-[#6B5D52]" />
-                                        <span className="text-base font-medium text-[#6B5D52]">{penghuni.phone}</span>
+                                    <div className="flex items-center gap-3">
+                                        <Phone className="w-5 h-5 text-[#6B5D52] flex-shrink-0" />
+                                        <div>
+                                            <p className="text-xs text-[#6B5D52] mb-1 uppercase tracking-wide">TELEPON</p>
+                                            <span className="text-base font-medium text-[#412E27]">{penghuni.phone}</span>
+                                        </div>
                                     </div>
 
                                     {/* Room */}
-                                    <div className="flex items-center gap-2 w-34">
-                                        <DoorOpen className="w-5 h-5 text-[#6B5D52]" />
-                                        <span className="text-base font-medium text-[#6B5D52]">Kamar {penghuni.roomNumber}</span>
+                                    <div className="flex items-center gap-3">
+                                        <DoorOpen className="w-5 h-5 text-[#6B5D52] flex-shrink-0" />
+                                        <div>
+                                            <p className="text-xs text-[#6B5D52] mb-1 uppercase tracking-wide">KAMAR</p>
+                                            <span className="text-base font-medium text-[#412E27]">{penghuni.roomNumber}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Status Badge and Edit Button */}
-                        <div className="flex items-center gap-3">
-                            
-                            {/* Edit Button */}
+                        {/* Edit Button */}
+                        <div className="ml-6">
                             <button
                                 onClick={() => handleEditClick(penghuni)}
                                 className="bg-[#654e3d] text-white p-2 rounded-lg hover:bg-[#412E27] transition-colors"
@@ -441,6 +481,77 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({ user, tenants: initialTen
                         >
                             Tambah Penghuni
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Success Alert Modal */}
+            {showSuccessAlert && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl p-8 max-w-sm w-full relative">
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                                <CheckCircle className="w-10 h-10 text-green-600" />
+                            </div>
+                            <h3 className="text-xl font-bold text-[#412E27] mb-2">Berhasil!</h3>
+                            <p className="text-[#6B5D52] mb-6">{alertMessage}</p>
+                            <button
+                                onClick={() => setShowSuccessAlert(false)}
+                                className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#654e3d] transition-colors"
+                            >
+                                OK
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Error Alert Modal */}
+            {showErrorAlert && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl p-8 max-w-sm w-full relative">
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                                <AlertCircle className="w-10 h-10 text-red-600" />
+                            </div>
+                            <h3 className="text-xl font-bold text-[#412E27] mb-2">Gagal!</h3>
+                            <p className="text-[#6B5D52] mb-6">{alertMessage}</p>
+                            <button
+                                onClick={() => setShowErrorAlert(false)}
+                                className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#654e3d] transition-colors"
+                            >
+                                OK
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirm Delete Dialog */}
+            {showConfirmDialog && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl p-8 max-w-sm w-full relative">
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
+                                <AlertCircle className="w-10 h-10 text-amber-600" />
+                            </div>
+                            <h3 className="text-xl font-bold text-[#412E27] mb-2">Konfirmasi Hapus</h3>
+                            <p className="text-[#6B5D52] mb-6">Apakah Anda yakin ingin menghapus penghuni ini?</p>
+                            <div className="flex gap-3 w-full">
+                                <button
+                                    onClick={cancelDelete}
+                                    className="flex-1 bg-gray-200 text-[#412E27] py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    onClick={confirmDelete}
+                                    className="flex-1 bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors"
+                                >
+                                    Hapus
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
