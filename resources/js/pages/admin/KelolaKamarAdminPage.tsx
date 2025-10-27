@@ -41,27 +41,28 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
   };
 
   const handleUpdateRoom = () => {
-    if (selectedRoom) {
-      router.patch(
-        `/admin/rooms/${selectedRoom.id}`,
-        {
-          number: roomNumber,
-          price: parseInt(roomPrice),
-          facilities: roomFacilities,
-          status: roomStatus,
+  if (selectedRoom) {
+    router.patch(
+      `/admin/rooms/${selectedRoom.id}`,
+      {
+        number: roomNumber,
+        price: parseInt(roomPrice),
+        facilities: roomFacilities,
+        status: roomStatus,
+      },
+      {
+        onSuccess: () => {
+          setShowEditModal(false);
+          setSelectedRoom(null);
+          alert('✅ Data kamar berhasil diperbarui!');
         },
-        {
-          onSuccess: () => {
-            setShowEditModal(false);
-            setSelectedRoom(null);
-          },
-          onError: (errors) => {
-            console.error('Update failed:', errors);
-          },
-        }
-      );
-    }
-  };
+        onError: (errors) => {
+          console.error('Update failed:', errors);
+          alert('❌ Gagal memperbarui data kamar. Silakan coba lagi.');
+        },
+      }
+    );}
+};
 
   const handleDeleteRoom = (id: number) => {
     if (confirm('Apakah Anda yakin ingin menghapus kamar ini?')) {
@@ -89,6 +90,7 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
   };
 
   return (
+
     <LayoutAdmin user={user} currentPath="/admin/rooms">
       {/* Header and Tambah Kamar button */}
       <div className="mb-8 mt-6 flex justify-between items-center">

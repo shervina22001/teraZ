@@ -134,7 +134,7 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({ user, tenants: initialTen
     };
 
     return (
-        <LayoutAdmin user={user} currentPath="/admin/tenants" title="Manajemen Penghuni - Arzeta Co-Living">
+        <LayoutAdmin user={user} currentPath="/admin/tenants">
             {/* Title and Add Button */}
             <div className="mb-8 mt-6 flex justify-between items-center">
                 <h1 className="text-3xl font-semibold text-[#7A2B1E]">Manajemen Penghuni Kos</h1>
