@@ -38,7 +38,7 @@ interface Props {
     contract: Contract;
 }
 
-const Profile: React.FC<Props> = ({ user, tenant, room, contract }) => {
+const Profile: React.FC<Props> = ({ user, tenant, room }) => {
     const [showPhotoModal, setShowPhotoModal] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -197,35 +197,6 @@ const Profile: React.FC<Props> = ({ user, tenant, room, contract }) => {
                                 <p className="text-sm font-medium text-[#7B695D] mb-1">Sewa Bulanan</p>
                                 <p className="text-lg font-semibold text-[#412E27]">
                                     {formatCurrency(room.monthly_rent)}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Bottom Section - Informasi Kontrak */}
-                <div className="bg-[#F7ECE0] rounded-xl p-8 shadow-md">
-                    <h2 className="text-2xl font-semibold text-[#412E27] mb-6">
-                        Informasi Kontrak
-                    </h2>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-9">
-                        <div className="flex items-start gap-5">
-                            <ArrowRight className="w-7 h-7 text-[#615348]" />
-                            <div>
-                                <p className="text-sm font-medium text-[#7B695D] mb-1">Tanggal Masuk</p>
-                                <p className="text-lg font-semibold text-[#412E27]">
-                                    {formatDate(contract.start_date)}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-start gap-5">
-                            <Calendar className="w-7 h-7 text-[#615348] mt-1" />
-                            <div>
-                                <p className="text-sm font-medium text-[#7B695D] mb-1">Lama Sewa</p>
-                                <p className="text-lg font-semibold text-[#412E27]">
-                                    {contract.duration_months} Bulan
                                 </p>
                             </div>
                         </div>

@@ -212,7 +212,7 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({
         <h1 className="text-3xl font-semibold text-[#7A2B1E]">Manajemen Penghuni Kos</h1>
         <button
           onClick={() => setShowAddModal(true)}
-          className="bg-[#6B5D52] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#654e3d] transition-colors flex items-center gap-2"
+          className="bg-[#6B5D52] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#4d3e33] transition-colors flex items-center gap-2"
         >
           <Plus className="w-5 h-5" />
           Tambah Penghuni
@@ -391,7 +391,7 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({
 
             <button
               onClick={handleUpdatePenghuni}
-              className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#654e3d] transition-colors"
+              className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#4d3e33] transition-colors"
             >
               Update Penghuni
             </button>
@@ -515,7 +515,7 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({
 
             <button
               onClick={handleAddTenant}
-              className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#654e3d] transition-colors"
+              className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#4d3e33] transition-colors"
             >
               Tambah Penghuni
             </button>
@@ -535,7 +535,7 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({
               <p className="text-[#6B5D52] mb-6">{alertMessage}</p>
               <button
                 onClick={() => setShowSuccessAlert(false)}
-                className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#654e3d] transition-colors"
+                className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#4d3e33] transition-colors"
               >
                 OK
               </button>
@@ -556,7 +556,7 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({
               <p className="text-[#6B5D52] mb-6">{alertMessage}</p>
               <button
                 onClick={() => setShowErrorAlert(false)}
-                className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#654e3d] transition-colors"
+                className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#4d3e33] transition-colors"
               >
                 OK
               </button>

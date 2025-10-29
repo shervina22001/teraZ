@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import Layout from '@/components/teraZ/user/LayoutUser';
-import { Calendar, CheckCircle, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, CheckCircle, X, ChevronLeft, ChevronRight, FileUp } from 'lucide-react';
 
 interface User {
     id: number;
@@ -312,8 +312,9 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ user, reports }) => {
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="bg-[#7A2B1E] text-white px-6 py-3 rounded-lg text-base font-semibold hover:bg-[#4e1108] transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                className="ml-3 inline-flex items-center gap-2 px-4 py-3 bg-[#6B5D52] text-white text-sm font-medium rounded-md hover:bg-[#4d3e33] transition-colors"
                             >
+                                <FileUp className="w-4 h-4" />
                                 {isSubmitting ? 'Mengirim...' : 'Kirim Laporan'}
                             </button>
                         </div>
@@ -333,7 +334,7 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ user, reports }) => {
                             <p className="text-[#6B5D52] mb-6">{alertMessage}</p>
                             <button
                                 onClick={() => setShowSuccessAlert(false)}
-                                className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#654e3d] transition-colors"
+                                className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#4d3e33] transition-colors"
                             >
                                 OK
                             </button>
@@ -354,7 +355,7 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ user, reports }) => {
                             <p className="text-[#6B5D52] mb-6">{alertMessage}</p>
                             <button
                                 onClick={() => setShowErrorAlert(false)}
-                                className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#654e3d] transition-colors"
+                                className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#4d3e33] transition-colors"
                             >
                                 OK
                             </button>

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Head, router } from '@inertiajs/react';
 import Layout from '@/components/teraZ/user/LayoutUser';
-import { Calendar, CheckCircle, Clock, AlertTriangle, X, CreditCard, Upload, Import, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, CheckCircle, Clock, AlertTriangle, X, CreditCard, Upload, FileUp, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface User {
   id: number;
@@ -383,9 +383,9 @@ const PembayaranPage: React.FC<PembayaranPageProps> = ({ user, payments, stats }
                     {(payment.status === 'pending' || payment.status === 'rejected') && (
                       <button
                         onClick={() => handlePayClick(payment)}
-                        className="ml-3 inline-flex items-center gap-2 px-3 py-2 bg-[#6B5D52] text-white text-sm font-medium rounded-md hover:bg-[#5C4E43] transition-colors"
+                        className="ml-3 inline-flex items-center gap-2 px-3 py-2 bg-[#6B5D52] text-white text-sm font-medium rounded-md hover:bg-[#4d3e33] transition-colors"
                       >
-                        <Import className="w-4 h-4" />
+                        <FileUp className="w-4 h-4" />
                         Upload Bukti Bayar
                       </button>
                     )}
@@ -579,7 +579,7 @@ const PembayaranPage: React.FC<PembayaranPageProps> = ({ user, payments, stats }
                 <p className="text-[#6B5D52] mb-6">{alertMessage}</p>
                 <button
                   onClick={() => setShowSuccessAlert(false)}
-                  className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#654e3d] transition-colors"
+                  className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#4d3e33] transition-colors"
                 >
                   OK
                 </button>
@@ -600,7 +600,7 @@ const PembayaranPage: React.FC<PembayaranPageProps> = ({ user, payments, stats }
                 <p className="text-[#6B5D52] mb-6">{alertMessage}</p>
                 <button
                   onClick={() => setShowErrorAlert(false)}
-                  className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#654e3d] transition-colors"
+                  className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#4d3e33] transition-colors"
                 >
                   OK
                 </button>

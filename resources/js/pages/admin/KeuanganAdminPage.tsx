@@ -373,7 +373,7 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
           {/* Disamakan modelnya dengan “Tambah Penghuni”: warna hijau-kopi & icon Plus */}
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-6 py-3 bg-[#6B5D52] text-white rounded-xl shadow-xl hover:bg-[#654e3d] transition-colors flex items-center gap-2"
+            className="px-6 py-3 bg-[#6B5D52] text-white rounded-xl shadow-xl hover:bg-[#4d3e33] transition-colors flex items-center gap-2"
           >
             <Plus className="w-5 h-5" />
             Buat Tagihan
@@ -923,7 +923,7 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
               </button>
               <button
                 onClick={handleCreatePayment}
-                className="flex-1 bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#654e3d] transition-colors"
+                className="flex-1 bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#4d3e33] transition-colors"
               >
                 Buat Tagihan
               </button>
@@ -1144,7 +1144,7 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
               <p className="text-[#6B5D52] mb-6">{alertMessage}</p>
               <button
                 onClick={() => setShowSuccessAlert(false)}
-                className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#654e3d] transition-colors"
+                className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#4d3e33] transition-colors"
               >
                 OK
               </button>
@@ -1165,7 +1165,7 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
               <p className="text-[#6B5D52] mb-6">{alertMessage}</p>
               <button
                 onClick={() => setShowErrorAlert(false)}
-                className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#654e3d] transition-colors"
+                className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#4d3e33] transition-colors"
               >
                 OK
               </button>
