@@ -66,7 +66,7 @@ const LoginPage: React.FC = () => {
           withCredentials: true, // pastikan cookie/session dikirim
         }
       );
-
+      console.log(`${API_BASE}/login`)
       if (response.status === 200) {
         const data = response.data;
 
@@ -104,19 +104,19 @@ const LoginPage: React.FC = () => {
     <div className="h-screen w-full bg-[#827062] flex items-center justify-center p-4 overflow-hidden">
       <div className="w-full max-w-[95%] sm:max-w-[85%] md:max-w-2xl lg:max-w-3xl xl:max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden">
         <div className="flex flex-col md:flex-row h-[580px] sm:h-[620px] md:h-[640px] lg:h-[660px]">
-          
+
           {/* Left Section - Form */}
           <div className="w-full md:w-1/2 bg-[#F5F1ED] px-6 sm:px-10 md:px-12 lg:px-16 py-10 sm:py-12 md:py-14 flex flex-col justify-center">
             <div className="w-full max-w-md mx-auto">
-              
+
               <div className="mb-10 sm:mb-12 text-center">
                 <h1 className="text-[28px] font-semibold text-[#7A2B1E] font-['Poppins']">Welcome to</h1>
                 <h2 className="text-[28px] font-semibold font-['Poppins']"
-                    style={{
-                      background: 'linear-gradient(90deg, #7A2B1E 55.77%, #F1E0CB 100%)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent'
-                    }}>
+                  style={{
+                    background: 'linear-gradient(90deg, #7A2B1E 55.77%, #F1E0CB 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent'
+                  }}>
                   Arzeta Co-Living!
                 </h2>
               </div>

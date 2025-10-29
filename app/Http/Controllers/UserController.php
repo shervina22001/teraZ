@@ -5,33 +5,23 @@ namespace App\Http\Controllers;
 use App\Models\Tenant;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
-    {
-        /**
-         * Halaman profil tenant/user.
-         */
-        public function profile(Request $request)
+{
+    /**
+     * Halaman profil tenant/user.
+     */
+    public function profile(Request $request)
     {
         $u = $request->user();
 
-        // Option 2: Find tenant by matching nama with user's name
-        // or kontak with user's phone
+        // Find tenant by matching nama with user's name or kontak with user's phone
         $tenant = Tenant::with('room')
             ->where('nama', $u->name)
             ->orWhere('kontak', $u->phone)
             ->latest('id')
             ->first();
-
-        // Alternative: If you want to match only active tenants
-        // $tenant = Tenant::with('room')
-        //     ->where(function($query) use ($u) {
-        //         $query->where('nama', $u->name)
-        //               ->orWhere('kontak', $u->phone);
-        //     })
-        //     ->where('status', 'active')
-        //     ->latest('id')
-        //     ->first();
 
         // Map data room (kalau ada)
         $room = $tenant && $tenant->room ? [
@@ -64,6 +54,12 @@ class UserController extends Controller
             'note'            => '',
         ];
 
+        // Get profile photo URL
+        $profilePhoto = asset('teraZ/testi1.png'); // Default
+        if ($tenant && $tenant->profile_photo) {
+            $profilePhoto = asset('storage/' . $tenant->profile_photo);
+        }
+
         return Inertia::render('user/ProfilePage', [
             'user' => [
                 'id'       => $u->id,
@@ -72,11 +68,57 @@ class UserController extends Controller
                 'phone'    => $u->phone,
                 'role'     => $u->role,
             ],
+            'tenant' => [
+                'id' => $tenant->id ?? null,
+                'profile_photo' => $profilePhoto,
+            ],
             'room' => $room,
             'contract' => $contract,
         ]);
     }
 
+    /**
+     * Update profile photo
+     */
+    public function updateProfilePhoto(Request $request)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'profile_photo' => 'required|image|mimes:jpeg,jpg,png|max:2048', // Max 2MB
+        ]);
+
+        // Find tenant
+        $tenant = Tenant::where('nama', $user->name)
+            ->orWhere('kontak', $user->phone)
+            ->latest('id')
+            ->first();
+
+        if (!$tenant) {
+            return back()->with('error', 'Data tenant tidak ditemukan.');
+        }
+
+        try {
+            // Delete old photo if exists
+            if ($tenant->profile_photo && Storage::disk('public')->exists($tenant->profile_photo)) {
+                Storage::disk('public')->delete($tenant->profile_photo);
+            }
+
+            // Upload new photo
+            $file = $request->file('profile_photo');
+            $filename = 'profile_' . $tenant->id . '_' . time() . '.' . $file->extension();
+            $path = $file->storeAs('profile_photos', $filename, 'public');
+
+            // Update tenant
+            $tenant->update([
+                'profile_photo' => $path,
+            ]);
+
+            return back()->with('success', 'Foto profil berhasil diperbarui.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal memperbarui foto profil: ' . $e->getMessage());
+        }
+    }
 
     /**
      * Dashboard admin.
@@ -85,8 +127,6 @@ class UserController extends Controller
     {
         $u = $request->user();
 
-        // PENTING: Sesuaikan path dengan struktur file TSX Anda
-        // Jika file ada di resources/js/Pages/admin/DashboardAdminPage.tsx → gunakan 'admin/DashboardAdminPage'
         return Inertia::render('admin/DashboardAdminPage', [
             'user' => [
                 'id'   => $u->id,
@@ -96,43 +136,52 @@ class UserController extends Controller
     }
 
     /**
- * API endpoint: Return user profile as JSON
- */
-public function me(Request $request)
-{
-    $u = $request->user();
+     * API endpoint: Return user profile as JSON
+     */
+    public function me(Request $request)
+    {
+        $u = $request->user();
 
-    // Ambil relasi tenant + room
-    $tenant = Tenant::with('room')
-        ->where('user_id', $u->id)
-        ->latest('id')
-        ->first();
+        // Ambil relasi tenant + room
+        $tenant = Tenant::with('room')
+            ->where('user_id', $u->id)
+            ->latest('id')
+            ->first();
 
-    return response()->json([
-        'user' => [
-            'id'       => $u->id,
-            'name'     => $u->name,
-            'username' => $u->username,
-            'phone'    => $u->phone,
-            'role'     => $u->role,
-        ],
-        'room' => $tenant && $tenant->room ? [
-            'number'        => $tenant->room->nomor_kamar,
-            'type'          => $tenant->room->tipe,
-            'monthly_rent'  => $tenant->room->harga,
-            'status'        => $tenant->room->status,
-        ] : null,
-        'contract' => $tenant ? [
-            'start_date'      => optional($tenant->tanggal_mulai)->format('Y-m-d'),
-            'end_date'        => optional($tenant->tanggal_selesai)->format('Y-m-d'),
-            'duration_months' => ($tenant->tanggal_mulai && $tenant->tanggal_selesai)
-                ? \Illuminate\Support\Carbon::parse($tenant->tanggal_mulai)
-                    ->diffInMonths(\Illuminate\Support\Carbon::parse($tenant->tanggal_selesai))
-                : null,
-            'status'          => $tenant->status,
-            'note'            => $tenant->catatan,
-        ] : null,
-    ]);
-}
+        // Get profile photo URL
+        $profilePhoto = asset('teraZ/testi1.png'); // Default
+        if ($tenant && $tenant->profile_photo) {
+            $profilePhoto = asset('storage/' . $tenant->profile_photo);
+        }
 
+        return response()->json([
+            'user' => [
+                'id'       => $u->id,
+                'name'     => $u->name,
+                'username' => $u->username,
+                'phone'    => $u->phone,
+                'role'     => $u->role,
+            ],
+            'tenant' => [
+                'id' => $tenant->id ?? null,
+                'profile_photo' => $profilePhoto,
+            ],
+            'room' => $tenant && $tenant->room ? [
+                'number'        => $tenant->room->nomor_kamar,
+                'type'          => $tenant->room->tipe,
+                'monthly_rent'  => $tenant->room->harga,
+                'status'        => $tenant->room->status,
+            ] : null,
+            'contract' => $tenant ? [
+                'start_date'      => optional($tenant->tanggal_mulai)->format('Y-m-d'),
+                'end_date'        => optional($tenant->tanggal_selesai)->format('Y-m-d'),
+                'duration_months' => ($tenant->tanggal_mulai && $tenant->tanggal_selesai)
+                    ? \Illuminate\Support\Carbon::parse($tenant->tanggal_mulai)
+                        ->diffInMonths(\Illuminate\Support\Carbon::parse($tenant->tanggal_selesai))
+                    : null,
+                'status'          => $tenant->status,
+                'note'            => $tenant->catatan,
+            ] : null,
+        ]);
+    }
 }

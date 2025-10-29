@@ -1,7 +1,7 @@
-import React from 'react';
-import { Head } from '@inertiajs/react';
+import React, { useState } from 'react';
+import { Head, router } from '@inertiajs/react';
 import Layout from '@/components/teraZ/user/LayoutUser';
-import { Mail, Phone, UserRoundCheck, Calendar, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Mail, Phone, UserRoundCheck, Calendar, ArrowRight, ArrowLeft, Camera, X } from 'lucide-react';
 
 interface User {
     id: number;
@@ -9,6 +9,11 @@ interface User {
     username: string;
     phone: string;
     role: string;
+}
+
+interface Tenant {
+    id: number;
+    profile_photo: string;
 }
 
 interface Room {
@@ -28,13 +33,17 @@ interface Contract {
 
 interface Props {
     user: User;
+    tenant: Tenant;
     room: Room;
     contract: Contract;
 }
 
-const Profile: React.FC<Props> = ({ user, room, contract }) => {
-    // No useEffect, no axios, no useState - just use the props!
-    
+const Profile: React.FC<Props> = ({ user, tenant, room, contract }) => {
+    const [showPhotoModal, setShowPhotoModal] = useState(false);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string>('');
+    const [isUploading, setIsUploading] = useState(false);
+
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -49,6 +58,68 @@ const Profile: React.FC<Props> = ({ user, room, contract }) => {
             month: 'long',
             year: 'numeric',
         });
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            // Validate file size (max 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                alert('Ukuran file maksimal 2MB');
+                e.target.value = '';
+                return;
+            }
+
+            // Validate file type
+            if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+                alert('Format file harus JPG, JPEG, atau PNG');
+                e.target.value = '';
+                return;
+            }
+
+            setSelectedFile(file);
+
+            // Create preview
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPreviewUrl(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleUpload = () => {
+        if (!selectedFile) {
+            alert('Pilih foto terlebih dahulu');
+            return;
+        }
+
+        setIsUploading(true);
+
+        const formData = new FormData();
+        formData.append('profile_photo', selectedFile);
+
+        router.post('/profile/update-photo', formData, {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => {
+                setShowPhotoModal(false);
+                setSelectedFile(null);
+                setPreviewUrl('');
+                setIsUploading(false);
+            },
+            onError: (errors) => {
+                console.error('Upload failed:', errors);
+                alert('Gagal mengupload foto');
+                setIsUploading(false);
+            },
+        });
+    };
+
+    const handleCancel = () => {
+        setShowPhotoModal(false);
+        setSelectedFile(null);
+        setPreviewUrl('');
     };
 
     return (
@@ -68,11 +139,20 @@ const Profile: React.FC<Props> = ({ user, room, contract }) => {
                         </h2>
 
                         <div className="flex items-start gap-4 mb-6">
-                            <img 
-                                src={'/teraZ/testi1.png'}
-                                alt={user.name}
-                                className="w-20 h-20 rounded-full object-cover border-3 border-[#412E27]"
-                            />
+                            <div className="relative">
+                                <img
+                                    src={tenant.profile_photo}
+                                    alt={user.name}
+                                    className="w-20 h-20 rounded-full object-cover border-3 border-[#412E27]"
+                                />
+                                <button
+                                    onClick={() => setShowPhotoModal(true)}
+                                    className="absolute bottom-0 right-0 bg-[#7A2B1E] text-white p-1.5 rounded-full hover:bg-[#561E15] transition-colors"
+                                    title="Ganti foto"
+                                >
+                                    <Camera className="w-4 h-4" />
+                                </button>
+                            </div>
                             <div>
                                 <h3 className="mb-2 font-semibold text-[#412E27]">
                                     {user.name}
@@ -161,6 +241,86 @@ const Profile: React.FC<Props> = ({ user, room, contract }) => {
                         </div>
                     </div>
                 </div>
+
+                {/* Photo Upload Modal */}
+                {showPhotoModal && (
+                    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl p-8 max-w-md w-full relative">
+                            <button
+                                onClick={handleCancel}
+                                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+
+                            <div className="flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mx-auto mb-4">
+                                <Camera className="w-8 h-8 text-blue-600" />
+                            </div>
+
+                            <h2 className="text-2xl font-bold text-[#412E27] mb-3 text-center">
+                                Ganti Foto Profil
+                            </h2>
+
+                            <div className="mb-6">
+                                {previewUrl ? (
+                                    <div className="relative">
+                                        <img
+                                            src={previewUrl}
+                                            alt="Preview"
+                                            className="w-48 h-48 mx-auto rounded-full object-cover border-4 border-[#7A2B1E]"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedFile(null);
+                                                setPreviewUrl('');
+                                            }}
+                                            className="absolute top-2 right-1/2 transform translate-x-20 bg-red-600 text-white p-2 rounded-full hover:bg-red-700"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                                        <input
+                                            type="file"
+                                            accept="image/jpeg,image/jpg,image/png"
+                                            onChange={handleFileChange}
+                                            className="hidden"
+                                            id="photo-upload"
+                                        />
+                                        <label htmlFor="photo-upload" className="cursor-pointer">
+                                            <Camera className="w-16 h-16 text-gray-400 mx-auto mb-3" />
+                                            <p className="text-sm text-gray-600 mb-1">
+                                                Klik untuk pilih foto
+                                            </p>
+                                            <p className="text-xs text-gray-500">
+                                                JPG, JPEG, PNG (Max 2MB)
+                                            </p>
+                                        </label>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={handleCancel}
+                                    className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                                    disabled={isUploading}
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    onClick={handleUpload}
+                                    className="flex-1 bg-[#7A2B1E] text-white py-3 rounded-lg font-medium hover:bg-[#561E15] transition-colors disabled:bg-gray-400"
+                                    disabled={!selectedFile || isUploading}
+                                >
+                                    {isUploading ? 'Mengupload...' : 'Upload'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </Layout>
         </>
     );

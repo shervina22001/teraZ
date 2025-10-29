@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { router } from '@inertiajs/react';
 import LayoutAdmin from '@/components/teraZ/admin/LayoutAdmin';
-import { Edit2, X, Trash2 } from 'lucide-react';
+import { Edit2, X, Trash2, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface KelolaKamarAdminProps {
   user: { name: string; id: number };
@@ -31,6 +31,13 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
   const [newRoomFacilities, setNewRoomFacilities] = useState('');
   const [newRoomStatus, setNewRoomStatus] = useState<'Terisi' | 'Kosong'>('Kosong');
 
+  // Custom Alert States
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+
   const handleEdit = (room: Room) => {
     setSelectedRoom(room);
     setRoomNumber(room.number);
@@ -40,46 +47,120 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
     setShowEditModal(true);
   };
 
-  
-const handleUpdateRoom = () => {
-  if (selectedRoom) {
-    router.patch(
-      `/admin/rooms/${selectedRoom.id}`,
+  const handleUpdateRoom = () => {
+    if (selectedRoom) {
+      // Validasi input
+      if (!roomNumber || !roomPrice || !roomFacilities) {
+        setAlertMessage("Mohon lengkapi semua field!");
+        setShowErrorAlert(true);
+        return;
+      }
+
+      router.patch(
+        `/admin/rooms/${selectedRoom.id}`,
+        {
+          number: roomNumber,
+          price: parseInt(roomPrice),
+          facilities: roomFacilities,
+          status: roomStatus,
+        },
+        {
+          onSuccess: () => {
+            setShowEditModal(false);
+            setSelectedRoom(null);
+            setAlertMessage("Kamar berhasil diupdate!");
+            setShowSuccessAlert(true);
+            // Reload untuk mendapatkan data terbaru dari server
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+          },
+          onError: (errors) => {
+            console.error("Update failed:", errors);
+            setAlertMessage("Update gagal, silakan coba lagi.");
+            setShowErrorAlert(true);
+          },
+        }
+      );
+    }
+  };
+
+  const handleAddRoom = () => {
+    // Validasi input
+    if (!newRoomNumber || !newRoomPrice || !newRoomFacilities) {
+      setAlertMessage("Mohon lengkapi semua field!");
+      setShowErrorAlert(true);
+      return;
+    }
+
+    router.post(
+      '/admin/rooms',
       {
-        number: roomNumber,
-        price: parseInt(roomPrice),
-        facilities: roomFacilities,
-        status: roomStatus,
+        nomor_kamar: newRoomNumber,
+        harga: parseInt(newRoomPrice),
+        status: newRoomStatus === 'Kosong' ? 'tersedia' : 'terisi',
+        fasilitas: newRoomFacilities,
+        tipe: '3x3',
       },
       {
-        onSuccess: () => {
-          setShowEditModal(false);
-          setSelectedRoom(null);
-          alert("Update berhasil!");
-          window.location.reload(); // reload halaman otomatis setelah klik OK
+        onSuccess: (page) => {
+          setShowAddModal(false);
+          resetAddForm();
+          setAlertMessage("Kamar berhasil ditambahkan!");
+          setShowSuccessAlert(true);
+          // Reload untuk mendapatkan data terbaru dari server
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
         },
         onError: (errors) => {
-          console.error("Update failed:", errors);
-          alert("Update gagal, silakan coba lagi.");
+          console.error('Tambah kamar gagal:', errors);
+          setAlertMessage("Gagal menambahkan kamar, silakan coba lagi.");
+          setShowErrorAlert(true);
         },
       }
     );
-  }
-};
-
+  };
 
   const handleDeleteRoom = (id: number) => {
-    if (confirm('Apakah Anda yakin ingin menghapus kamar ini?')) {
-      router.delete(`/admin/rooms/${id}`, {
+    setPendingDeleteId(id);
+    setShowConfirmDialog(true);
+  };
+
+  const confirmDelete = () => {
+    if (pendingDeleteId) {
+      router.delete(`/admin/rooms/${pendingDeleteId}`, {
         onSuccess: () => {
-          // Page will reload automatically with Inertia
+          setShowConfirmDialog(false);
+          setPendingDeleteId(null);
+          setAlertMessage("Kamar berhasil dihapus!");
+          setShowSuccessAlert(true);
+          // Reload untuk mendapatkan data terbaru dari server
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
         },
         onError: (errors) => {
           console.error('Delete failed:', errors);
-          alert('Gagal menghapus kamar. Mungkin masih ada penghuni aktif.');
+          setShowConfirmDialog(false);
+          setPendingDeleteId(null);
+          setAlertMessage('Gagal menghapus kamar. Mungkin masih ada penghuni aktif.');
+          setShowErrorAlert(true);
         },
       });
     }
+  };
+
+  const cancelDelete = () => {
+    setShowConfirmDialog(false);
+    setPendingDeleteId(null);
+  };
+
+  const resetAddForm = () => {
+    setNewRoomNumber('');
+    setNewRoomPrice('');
+    setNewRoomFacilities('');
+    setNewRoomStatus('Kosong');
   };
 
   const getStatusColor = (status: string) => {
@@ -133,7 +214,7 @@ const handleUpdateRoom = () => {
                 </div>
               </div>
 
-              <div className="border-2 border-[#7A2B1E] rounded-lg  text-[#7A2B1E] text-sm py-2 px-4 text-center">
+              <div className="border-2 border-[#7A2B1E] rounded-lg text-[#7A2B1E] text-sm py-2 px-4 text-center">
                 {room.facilities}
               </div>
             </div>
@@ -164,11 +245,11 @@ const handleUpdateRoom = () => {
       {/* Edit Modal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-8 max-w-md w-full relative">
+          <div className="text-black bg-white rounded-xl p-8 max-w-md w-full relative">
             <button
               onClick={() => setShowEditModal(false)}
               className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-              aria-label="[Tutup modal]"
+              aria-label="Tutup modal"
             >
               <X className="w-6 h-6" />
             </button>
@@ -215,7 +296,7 @@ const handleUpdateRoom = () => {
                 value={roomFacilities}
                 onChange={(e) => setRoomFacilities(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E] resize-none"
-                placeholder="[Kasur, Bantal, Guling, Lemari, Kipas, Meja dan Kursi Belajar]"
+                placeholder="Kasur, Bantal, Guling, Lemari, Kipas, Meja dan Kursi Belajar"
                 rows={3}
               />
             </div>
@@ -237,7 +318,7 @@ const handleUpdateRoom = () => {
             <button
               onClick={() => setShowAddModal(false)}
               className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-              aria-label="[Tutup modal tambah kamar]"
+              aria-label="Tutup modal tambah kamar"
             >
               <X className="w-6 h-6" />
             </button>
@@ -253,7 +334,6 @@ const handleUpdateRoom = () => {
                 className="text-black w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E]"
                 placeholder="01"
               />
-
             </div>
 
             <div className="mb-4">
@@ -274,8 +354,8 @@ const handleUpdateRoom = () => {
                 onChange={(e) => setNewRoomStatus(e.target.value as 'Terisi' | 'Kosong')}
                 className="text-black w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E]"
               >
-                <option value="terisi">Terisi</option>
-                <option value="tersedia">Tersedia</option>
+                <option value="Terisi">Terisi</option>
+                <option value="Kosong">Kosong</option>
               </select>
             </div>
 
@@ -291,34 +371,82 @@ const handleUpdateRoom = () => {
             </div>
 
             <button
-              onClick={() => {
-                router.post(
-                  '/admin/rooms',
-                  {
-                    nomor_kamar: newRoomNumber,
-                    harga: parseInt(newRoomPrice),
-                    status: newRoomStatus,
-                    fasilitas: newRoomFacilities,
-                    tipe: '3x3',
-                  },
-                  {
-                    onSuccess: () => {
-                      setShowAddModal(false);
-                      setNewRoomNumber('');
-                      setNewRoomPrice('');
-                      setNewRoomFacilities('');
-                      setNewRoomStatus('Kosong');
-                    },
-                    onError: (errors) => {
-                      console.error('Tambah kamar gagal:', errors);
-                    },
-                  }
-                );
-              }}
+              onClick={handleAddRoom}
               className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#5C4E43] transition-colors"
             >
               Tambah Kamar
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Success Alert Modal */}
+      {showSuccessAlert && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-8 max-w-sm w-full relative">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                <CheckCircle className="w-10 h-10 text-green-600" />
+              </div>
+              <h3 className="text-xl font-bold text-[#412E27] mb-2">Berhasil!</h3>
+              <p className="text-[#6B5D52] mb-6">{alertMessage}</p>
+              <button
+                onClick={() => setShowSuccessAlert(false)}
+                className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#654e3d] transition-colors"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Alert Modal */}
+      {showErrorAlert && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-8 max-w-sm w-full relative">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <AlertCircle className="w-10 h-10 text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-[#412E27] mb-2">Gagal!</h3>
+              <p className="text-[#6B5D52] mb-6">{alertMessage}</p>
+              <button
+                onClick={() => setShowErrorAlert(false)}
+                className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#654e3d] transition-colors"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Delete Dialog */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-8 max-w-sm w-full relative">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
+                <AlertCircle className="w-10 h-10 text-amber-600" />
+              </div>
+              <h3 className="text-xl font-bold text-[#412E27] mb-2">Konfirmasi Hapus</h3>
+              <p className="text-[#6B5D52] mb-6">Apakah Anda yakin ingin menghapus kamar ini?</p>
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={cancelDelete}
+                  className="flex-1 bg-gray-200 text-[#412E27] py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="flex-1 bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors"
+                >
+                  Hapus
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
