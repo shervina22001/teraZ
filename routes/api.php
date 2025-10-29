@@ -59,7 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Kelola rooms (admin-only)
         Route::apiResource('rooms', RoomAdminController::class);
-        Route::apiResource('rooms', AdminRoomPageController::class);
+        Route::apiResource('rooms', RoomAdminController::class);
 
         // Kelola tenants
         Route::apiResource('tenants', TenantAdminController::class)->except(['create', 'edit']);
