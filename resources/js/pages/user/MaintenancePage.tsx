@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import Layout from '@/components/teraZ/user/LayoutUser';
-import { Calendar, CheckCircle } from 'lucide-react';
+import { Calendar, CheckCircle, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface User {
     id: number;
@@ -33,6 +33,39 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ user, reports }) => {
     const [issueType, setIssueType] = useState('');
     const [description, setDescription] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Alert states
+    const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+    const [showErrorAlert, setShowErrorAlert] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(0);
+    const itemsPerPage = 5;
+    const totalPages = Math.ceil(reports.length / itemsPerPage);
+
+    // Get current page reports
+    const getCurrentPageReports = () => {
+        const startIndex = currentPage * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        return reports.slice(startIndex, endIndex);
+    };
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages - 1) {
+            setCurrentPage(currentPage + 1);
+        }
+    };
+
+    const handlePrevPage = () => {
+        if (currentPage > 0) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
+
+    const handlePageClick = (pageIndex: number) => {
+        setCurrentPage(pageIndex);
+    };
 
     const getStatusBadgeColor = (statusColor: string) => {
         switch (statusColor) {
@@ -66,7 +99,8 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ user, reports }) => {
         e.preventDefault();
 
         if (!issueType.trim() || !description.trim()) {
-            alert('Mohon isi semua field yang diperlukan');
+            setAlertMessage('Mohon isi semua field yang diperlukan');
+            setShowErrorAlert(true);
             return;
         }
 
@@ -79,18 +113,24 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ user, reports }) => {
                 description: description,
             },
             {
-                preserveState: false,
-                preserveScroll: false,
+                preserveState: true,
+                preserveScroll: true,
                 onSuccess: () => {
                     setIssueType('');
                     setDescription('');
                     setIsSubmitting(false);
-                    alert('✅ Laporan berhasil dikirim!');
+                    setAlertMessage('Laporan berhasil dikirim! Admin akan segera menindaklanjuti laporan Anda.');
+                    setShowSuccessAlert(true);
+                    
+                    // Refresh data and reset to first page
+                    setCurrentPage(0);
+                    router.reload({ only: ['reports'] });
                 },
                 onError: (errors) => {
                     console.error('Submit failed:', errors);
                     setIsSubmitting(false);
-                    alert('❌ Gagal mengirim laporan. Silakan coba lagi.');
+                    setAlertMessage('Gagal mengirim laporan. Silakan coba lagi.');
+                    setShowErrorAlert(true);
                 },
             }
         );
@@ -108,17 +148,24 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ user, reports }) => {
 
                 {/* Riwayat Laporan Section */}
                 <div className="bg-[#F7ECE0] rounded-xl p-8 shadow-md mb-8">
-                    <h2 className="text-2xl font-semibold text-[#412E27] mb-6">
-                        Riwayat Laporan
-                    </h2>
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-2xl font-semibold text-[#412E27]">
+                            Riwayat Laporan
+                        </h2>
+                        {reports.length > 0 && (
+                            <p className="text-sm text-[#6B5D52]">
+                                Menampilkan {currentPage * itemsPerPage + 1}-{Math.min((currentPage + 1) * itemsPerPage, reports.length)} dari {reports.length} laporan
+                            </p>
+                        )}
+                    </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-4 min-h-[400px]">
                         {reports.length === 0 ? (
                             <div className="bg-white rounded-lg p-8 text-center">
                                 <p className="text-gray-500">Belum ada laporan kerusakan</p>
                             </div>
                         ) : (
-                            reports.map((report) => (
+                            getCurrentPageReports().map((report) => (
                                 <div key={report.id} className="bg-white rounded-lg p-6 shadow-lg">
                                     <div className="flex justify-between items-start mb-3">
                                         <div className="flex-1">
@@ -168,6 +215,53 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ user, reports }) => {
                             ))
                         )}
                     </div>
+
+                    {/* Carousel Navigation */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-center gap-4 mt-8">
+                            {/* Previous Button */}
+                            <button
+                                onClick={handlePrevPage}
+                                disabled={currentPage === 0}
+                                className={`p-2 rounded-full transition-colors ${
+                                    currentPage === 0
+                                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                        : 'bg-[#7A2B1E] text-white hover:bg-[#5C1F14]'
+                                }`}
+                            >
+                                <ChevronLeft className="w-5 h-5" />
+                            </button>
+
+                            {/* Page Indicators */}
+                            <div className="flex gap-2">
+                                {Array.from({ length: totalPages }, (_, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => handlePageClick(index)}
+                                        className={`w-3 h-3 rounded-full transition-all ${
+                                            currentPage === index
+                                                ? 'bg-[#7A2B1E] w-8'
+                                                : 'bg-gray-300 hover:bg-gray-400'
+                                        }`}
+                                        aria-label={`Go to page ${index + 1}`}
+                                    />
+                                ))}
+                            </div>
+
+                            {/* Next Button */}
+                            <button
+                                onClick={handleNextPage}
+                                disabled={currentPage === totalPages - 1}
+                                className={`p-2 rounded-full transition-colors ${
+                                    currentPage === totalPages - 1
+                                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                        : 'bg-[#7A2B1E] text-white hover:bg-[#5C1F14]'
+                                }`}
+                            >
+                                <ChevronRight className="w-5 h-5" />
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Buat Laporan Section */}
@@ -226,6 +320,48 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ user, reports }) => {
                     </form>
                 </div>
             </Layout>
+
+            {/* Success Alert Modal */}
+            {showSuccessAlert && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl p-8 max-w-sm w-full relative">
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                                <CheckCircle className="w-10 h-10 text-green-600" />
+                            </div>
+                            <h3 className="text-xl font-bold text-[#412E27] mb-2">Berhasil!</h3>
+                            <p className="text-[#6B5D52] mb-6">{alertMessage}</p>
+                            <button
+                                onClick={() => setShowSuccessAlert(false)}
+                                className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#654e3d] transition-colors"
+                            >
+                                OK
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Error Alert Modal */}
+            {showErrorAlert && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl p-8 max-w-sm w-full relative">
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                                <X className="w-10 h-10 text-red-600" />
+                            </div>
+                            <h3 className="text-xl font-bold text-[#412E27] mb-2">Gagal!</h3>
+                            <p className="text-[#6B5D52] mb-6">{alertMessage}</p>
+                            <button
+                                onClick={() => setShowErrorAlert(false)}
+                                className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#654e3d] transition-colors"
+                            >
+                                OK
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 };

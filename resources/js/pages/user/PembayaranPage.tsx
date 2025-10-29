@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Head, router } from '@inertiajs/react';
 import Layout from '@/components/teraZ/user/LayoutUser';
-import { Calendar, CheckCircle, Clock, AlertTriangle, X, CreditCard, Upload, Import, Image as ImageIcon } from 'lucide-react';
+import { Calendar, CheckCircle, Clock, AlertTriangle, X, CreditCard, Upload, Import, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface User {
   id: number;
@@ -22,7 +22,7 @@ interface Payment {
   status_label: string;
   status_color: string;
   payment_method: string | null;
-  reference: string | null; // Image URL
+  reference: string | null;
   has_proof_image: boolean;
   notes: string | null;
   period: string;
@@ -43,7 +43,6 @@ interface PembayaranPageProps {
   stats: Stats;
 }
 
-/** Helper format rupiah: 850000 -> "850.000" */
 const rupiah = (v: number | string) =>
   Number(v).toLocaleString('id-ID', { maximumFractionDigits: 0 });
 
@@ -55,10 +54,58 @@ const PembayaranPage: React.FC<PembayaranPageProps> = ({ user, payments, stats }
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
 
-  // === Alerts ala KelolaKamarAdmin ===
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
   const [showErrorAlert, setShowErrorAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
+
+  // Filter & Pagination states
+  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'paid' | 'confirmed'>('all');
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 5;
+
+  // Sort payments (newest first) and filter
+  const filteredPayments = useMemo(() => {
+    let filtered = [...payments].sort((a, b) => b.id - a.id);
+    
+    if (filterStatus === 'pending') {
+      filtered = filtered.filter(p => p.status === 'pending' || p.status === 'rejected');
+    } else if (filterStatus === 'paid') {
+      filtered = filtered.filter(p => p.status === 'paid');
+    } else if (filterStatus === 'confirmed') {
+      filtered = filtered.filter(p => p.status === 'confirmed');
+    }
+    
+    return filtered;
+  }, [payments, filterStatus]);
+
+  const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
+
+  const getCurrentPagePayments = () => {
+    const startIndex = currentPage * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredPayments.slice(startIndex, endIndex);
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages - 1) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 0) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handlePageClick = (pageIndex: number) => {
+    setCurrentPage(pageIndex);
+  };
+
+  const handleFilterChange = (filter: 'all' | 'pending' | 'paid' | 'confirmed') => {
+    setFilterStatus(filter);
+    setCurrentPage(0);
+  };
 
   const getStatusBadgeColor = (statusColor: string) => {
     switch (statusColor) {
@@ -100,14 +147,12 @@ const PembayaranPage: React.FC<PembayaranPageProps> = ({ user, payments, stats }
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file size (max 2MB)
       if (file.size > 2 * 1024 * 1024) {
         setAlertMessage('Ukuran file maksimal 2MB');
         setShowErrorAlert(true);
         e.target.value = '';
         return;
       }
-      // Validate file type
       if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
         setAlertMessage('Format file harus JPG, JPEG, atau PNG');
         setShowErrorAlert(true);
@@ -139,7 +184,7 @@ const PembayaranPage: React.FC<PembayaranPageProps> = ({ user, payments, stats }
     formData.append('payment_id', selectedPayment.id.toString());
     formData.append('payment_method', paymentMethod);
     if (notes) formData.append('notes', notes);
-    if (referenceFile) formData.append('reference', referenceFile); // Upload to reference field
+    if (referenceFile) formData.append('reference', referenceFile);
 
     router.post('/pembayaran/confirm', formData, {
       preserveState: true,
@@ -156,7 +201,7 @@ const PembayaranPage: React.FC<PembayaranPageProps> = ({ user, payments, stats }
         setAlertMessage('Pembayaran berhasil dikonfirmasi! Kami akan memverifikasi dalam waktu singkat.');
         setShowSuccessAlert(true);
 
-        // Refresh hanya data yang perlu
+        setCurrentPage(0);
         router.reload({ only: ['payments', 'stats'] });
       },
       onError: (errors) => {
@@ -172,7 +217,6 @@ const PembayaranPage: React.FC<PembayaranPageProps> = ({ user, payments, stats }
       <Head title="Pembayaran" />
 
       <Layout user={user} currentPath="/pembayaran">
-        {/* Page Title */}
         <h1 className="text-3xl font-semibold text-[#7A2B1E] mt-8 mb-8">
           Pembayaran Sewa
         </h1>
@@ -199,17 +243,73 @@ const PembayaranPage: React.FC<PembayaranPageProps> = ({ user, payments, stats }
 
         {/* Payment List */}
         <div className="bg-[#F7ECE0] rounded-xl p-8 shadow-md">
-          <h2 className="text-2xl font-semibold text-[#412E27] mb-6">
-            Riwayat Pembayaran
-          </h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-semibold text-[#412E27]">
+              Riwayat Pembayaran
+            </h2>
+            {filteredPayments.length > 0 && (
+              <p className="text-sm text-[#6B5D52]">
+                Menampilkan {currentPage * itemsPerPage + 1}-{Math.min((currentPage + 1) * itemsPerPage, filteredPayments.length)} dari {filteredPayments.length} pembayaran
+              </p>
+            )}
+          </div>
 
-          <div className="space-y-4">
-            {payments.length === 0 ? (
+          {/* Filter Tabs */}
+          <div className="flex gap-3 mb-6">
+            <button
+              onClick={() => handleFilterChange('all')}
+              className={`px-5 py-2 rounded-lg font-medium transition-colors ${
+                filterStatus === 'all'
+                  ? 'bg-[#7A2B1E] text-white'
+                  : 'bg-white text-[#412E27] hover:bg-gray-100'
+              }`}
+            >
+              Semua ({payments.length})
+            </button>
+            <button
+              onClick={() => handleFilterChange('pending')}
+              className={`px-5 py-2 rounded-lg font-medium transition-colors ${
+                filterStatus === 'pending'
+                  ? 'bg-[#D97236] text-white'
+                  : 'bg-white text-[#412E27] hover:bg-gray-100'
+              }`}
+            >
+              Belum Bayar ({stats.pending})
+            </button>
+            <button
+              onClick={() => handleFilterChange('paid')}
+              className={`px-5 py-2 rounded-lg font-medium transition-colors ${
+                filterStatus === 'paid'
+                  ? 'bg-[#2E5A8B] text-white'
+                  : 'bg-white text-[#412E27] hover:bg-gray-100'
+              }`}
+            >
+              Proses ({stats.waiting_approval})
+            </button>
+            <button
+              onClick={() => handleFilterChange('confirmed')}
+              className={`px-5 py-2 rounded-lg font-medium transition-colors ${
+                filterStatus === 'confirmed'
+                  ? 'bg-[#2E6B4A] text-white'
+                  : 'bg-white text-[#412E27] hover:bg-gray-100'
+              }`}
+            >
+              Lunas ({stats.confirmed})
+            </button>
+          </div>
+
+          <div className="space-y-4 min-h-[400px]">
+            {filteredPayments.length === 0 ? (
               <div className="bg-white rounded-lg p-8 text-center">
-                <p className="text-gray-500">Belum ada tagihan pembayaran</p>
+                <p className="text-gray-500">
+                  {filterStatus === 'all' 
+                    ? 'Belum ada tagihan pembayaran'
+                    : `Tidak ada pembayaran dengan status ${filterStatus === 'pending' ? 'belum bayar' : filterStatus === 'paid' ? 'proses' : 'lunas'}`
+                  }
+                </p>
               </div>
             ) : (
-              payments.map((payment) => (
+              getCurrentPagePayments().map((payment) => (
                 <div key={payment.id} className="bg-white rounded-lg p-6 shadow-lg">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
@@ -259,7 +359,6 @@ const PembayaranPage: React.FC<PembayaranPageProps> = ({ user, payments, stats }
                         </div>
                       )}
 
-                      {/* Show payment proof image if exists */}
                       {payment.has_proof_image && payment.reference && (
                         <div className="mt-3">
                           <p className="text-sm text-gray-600 mb-2">Bukti Pembayaran:</p>
@@ -295,6 +394,50 @@ const PembayaranPage: React.FC<PembayaranPageProps> = ({ user, payments, stats }
               ))
             )}
           </div>
+
+          {/* Carousel Navigation */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-4 mt-8">
+              <button
+                onClick={handlePrevPage}
+                disabled={currentPage === 0}
+                className={`p-2 rounded-full transition-colors ${
+                  currentPage === 0
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-[#7A2B1E] text-white hover:bg-[#5C1F14]'
+                }`}
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+
+              <div className="flex gap-2">
+                {Array.from({ length: totalPages }, (_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handlePageClick(index)}
+                    className={`w-3 h-3 rounded-full transition-all ${
+                      currentPage === index
+                        ? 'bg-[#7A2B1E] w-8'
+                        : 'bg-gray-300 hover:bg-gray-400'
+                    }`}
+                    aria-label={`Go to page ${index + 1}`}
+                  />
+                ))}
+              </div>
+
+              <button
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages - 1}
+                className={`p-2 rounded-full transition-colors ${
+                  currentPage === totalPages - 1
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-[#7A2B1E] text-white hover:bg-[#5C1F14]'
+                }`}
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Payment Confirmation Modal */}
@@ -345,7 +488,6 @@ const PembayaranPage: React.FC<PembayaranPageProps> = ({ user, payments, stats }
                 </select>
               </div>
 
-              {/* Photo Upload Section */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-[#412E27] mb-2">
                   Bukti Pembayaran (Opsional)
