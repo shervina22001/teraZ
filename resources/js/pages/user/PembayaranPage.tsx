@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import Layout from '@/components/teraZ/user/LayoutUser';
-import { Calendar, DollarSign, CheckCircle, Clock, AlertTriangle, X, CreditCard, Upload, Image as ImageIcon } from 'lucide-react';
+import { Calendar, CheckCircle, Clock, AlertTriangle, X, CreditCard, Upload, Import, Image as ImageIcon } from 'lucide-react';
 
 interface User {
     id: number;
@@ -42,6 +42,10 @@ interface PembayaranPageProps {
     payments: Payment[];
     stats: Stats;
 }
+
+/** Helper format rupiah: 850000 -> "850.000" */
+const rupiah = (v: number | string) =>
+  Number(v).toLocaleString('id-ID', { maximumFractionDigits: 0 });
 
 const PembayaranPage: React.FC<PembayaranPageProps> = ({ user, payments, stats }) => {
     const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -168,9 +172,9 @@ const PembayaranPage: React.FC<PembayaranPageProps> = ({ user, payments, stats }
 
                 {/* Statistics Cards */}
                 <div className="grid grid-cols-4 gap-6 mb-8">
-                    <div className="bg-white rounded-lg shadow-md p-6">
-                        <p className="text-sm text-[#412E27] mb-2">Total Tagihan</p>
-                        <p className="text-2xl font-bold text-[#412E27]">{stats.total}</p>
+                    <div className="bg-gray-100 rounded-lg shadow-md p-6">
+                        <p className="text-sm text-gray-800 mb-2">Total Tagihan</p>
+                        <p className="text-2xl font-bold text-gray-700">{stats.total}</p>
                     </div>
                     <div className="bg-yellow-50 rounded-lg shadow-md p-6">
                         <p className="text-sm text-yellow-800 mb-2">Belum Bayar</p>
@@ -222,7 +226,7 @@ const PembayaranPage: React.FC<PembayaranPageProps> = ({ user, payments, stats }
                                                 <div>
                                                     <p className="text-sm text-gray-600">Jumlah</p>
                                                     <p className="text-xl font-bold text-[#7A2B1E]">
-                                                        Rp {payment.amount.toLocaleString('id-ID')}
+                                                        Rp {rupiah(payment.amount)}
                                                     </p>
                                                 </div>
                                             </div>
@@ -270,10 +274,11 @@ const PembayaranPage: React.FC<PembayaranPageProps> = ({ user, payments, stats }
 
                                         {(payment.status === 'pending' || payment.status === 'rejected') && (
                                             <button
-                                                onClick={() => handlePayClick(payment)}
-                                                className="ml-4 bg-[#7A2B1E] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#4e1108] transition-colors"
+                                              onClick={() => handlePayClick(payment)}
+                                              className="ml-3 inline-flex items-center gap-2 px-3 py-2 bg-[#6B5D52] text-white text-sm font-medium rounded-md hover:bg-[#5C4E43] transition-colors"
                                             >
-                                                {payment.status === 'rejected' ? 'Bayar Ulang' : 'Bayar Sekarang'}
+                                              <Import className="w-4 h-4" />
+                                              Upload Bukti Bayar
                                             </button>
                                         )}
                                     </div>
@@ -310,7 +315,7 @@ const PembayaranPage: React.FC<PembayaranPageProps> = ({ user, payments, stats }
                                 <p className="text-lg font-semibold text-[#412E27]">{selectedPayment.period}</p>
                                 <p className="text-sm text-gray-600 mt-2">Jumlah</p>
                                 <p className="text-2xl font-bold text-[#7A2B1E]">
-                                    Rp {selectedPayment.amount.toLocaleString('id-ID')}
+                                    Rp {rupiah(selectedPayment.amount)}
                                 </p>
                             </div>
 

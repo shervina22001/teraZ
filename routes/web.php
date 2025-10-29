@@ -69,9 +69,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
 
     // Payment Management (Admin POV)
     Route::get('/keuangan', [PaymentAdminController::class, 'index'])->name('payments.index');
+    Route::post('/payments', [PaymentAdminController::class, 'store'])->name('payments.store');
     Route::post('/payments/generate', [PaymentAdminController::class, 'generateMonthlyPayments'])->name('payments.generate');
     Route::post('/payments/{payment}/approve', [PaymentAdminController::class, 'approvePayment'])->name('payments.approve');
     Route::post('/payments/{payment}/reject', [PaymentAdminController::class, 'rejectPayment'])->name('payments.reject');
+    Route::delete('/payments/{payment}', [PaymentAdminController::class, 'destroy'])->name('payments.destroy');
 
     // Rental Extension & Termination
     Route::get('/extensions', [RentalExtensionController::class, 'index'])->name('extensions.index');

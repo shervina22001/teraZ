@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { router } from '@inertiajs/react';
 import LayoutAdmin from '@/components/teraZ/admin/LayoutAdmin';
-import { Edit2, X, Trash2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Edit2, X, Trash2, CheckCircle, AlertCircle, Plus } from 'lucide-react';
 
 interface KelolaKamarAdminProps {
   user: { name: string; id: number };
@@ -16,6 +16,9 @@ interface Room {
   facilities: string;
 }
 
+const rupiah = (v: number | string) =>
+  Number(v).toLocaleString('id-ID', { maximumFractionDigits: 0 });
+
 const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initialRooms }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -24,7 +27,7 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
   const [roomPrice, setRoomPrice] = useState('');
   const [roomFacilities, setRoomFacilities] = useState('');
   const [roomStatus, setRoomStatus] = useState<'Terisi' | 'Kosong'>('Kosong');
-  const [rooms, setRooms] = useState<Room[]>(initialRooms);
+  const [rooms] = useState<Room[]>(initialRooms);
 
   const [newRoomNumber, setNewRoomNumber] = useState('');
   const [newRoomPrice, setNewRoomPrice] = useState('');
@@ -49,9 +52,8 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
 
   const handleUpdateRoom = () => {
     if (selectedRoom) {
-      // Validasi input
       if (!roomNumber || !roomPrice || !roomFacilities) {
-        setAlertMessage("Mohon lengkapi semua field!");
+        setAlertMessage('Mohon lengkapi semua field!');
         setShowErrorAlert(true);
         return;
       }
@@ -68,16 +70,15 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
           onSuccess: () => {
             setShowEditModal(false);
             setSelectedRoom(null);
-            setAlertMessage("Kamar berhasil diupdate!");
+            setAlertMessage('Kamar berhasil diupdate!');
             setShowSuccessAlert(true);
-            // Reload untuk mendapatkan data terbaru dari server
             setTimeout(() => {
               window.location.reload();
             }, 1500);
           },
           onError: (errors) => {
-            console.error("Update failed:", errors);
-            setAlertMessage("Update gagal, silakan coba lagi.");
+            console.error('Update failed:', errors);
+            setAlertMessage('Update gagal, silakan coba lagi.');
             setShowErrorAlert(true);
           },
         }
@@ -86,9 +87,8 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
   };
 
   const handleAddRoom = () => {
-    // Validasi input
     if (!newRoomNumber || !newRoomPrice || !newRoomFacilities) {
-      setAlertMessage("Mohon lengkapi semua field!");
+      setAlertMessage('Mohon lengkapi semua field!');
       setShowErrorAlert(true);
       return;
     }
@@ -103,19 +103,18 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
         tipe: '3x3',
       },
       {
-        onSuccess: (page) => {
+        onSuccess: () => {
           setShowAddModal(false);
           resetAddForm();
-          setAlertMessage("Kamar berhasil ditambahkan!");
+          setAlertMessage('Kamar berhasil ditambahkan!');
           setShowSuccessAlert(true);
-          // Reload untuk mendapatkan data terbaru dari server
           setTimeout(() => {
             window.location.reload();
           }, 1500);
         },
         onError: (errors) => {
           console.error('Tambah kamar gagal:', errors);
-          setAlertMessage("Gagal menambahkan kamar, silakan coba lagi.");
+          setAlertMessage('Gagal menambahkan kamar, silakan coba lagi.');
           setShowErrorAlert(true);
         },
       }
@@ -133,9 +132,8 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
         onSuccess: () => {
           setShowConfirmDialog(false);
           setPendingDeleteId(null);
-          setAlertMessage("Kamar berhasil dihapus!");
+          setAlertMessage('Kamar berhasil dihapus!');
           setShowSuccessAlert(true);
-          // Reload untuk mendapatkan data terbaru dari server
           setTimeout(() => {
             window.location.reload();
           }, 1500);
@@ -176,13 +174,14 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
 
   return (
     <LayoutAdmin user={user} currentPath="/admin/rooms">
-      {/* Header and Tambah Kamar button */}
+      {/* Header and Tambah Kamar button (disamakan seperti Tambah Penghuni) */}
       <div className="mb-8 mt-6 flex justify-between items-center">
         <h1 className="text-3xl font-semibold text-[#7A2B1E]">Manajemen Kamar Kos</h1>
         <button
           onClick={() => setShowAddModal(true)}
-          className="px-6 py-3 bg-[#7A2B1E] text-white rounded-lg font-semibold hover:bg-[#561E15] transition-colors"
+          className="bg-[#6B5D52] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#654e3d] transition-colors flex items-center gap-2"
         >
+          <Plus className="w-5 h-5" />
           Tambah Kamar
         </button>
       </div>
@@ -201,7 +200,7 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
                     Kamar {room.number}
                   </h3>
                   <p className="text-3xl font-bold text-[#412E27] mb-1">
-                    Rp {room.price.toLocaleString('id-ID')}
+                    Rp {rupiah(room.price)}
                   </p>
                   <p className="text-sm text-[#6B5D52]">Per bulan</p>
                 </div>
@@ -223,7 +222,7 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
             <div className="flex justify-end gap-4 mt-4">
               <button
                 onClick={() => handleEdit(room)}
-                className="bg-[#654e3d] text-white p-2 rounded-lg hover:bg-[#412E27] transition-colors flex items-center gap-1"
+                className="bg-[#4e5f7d] text-white px-4 py-2 rounded-lg hover:bg-[#3d4c65] transition-colors flex items-center gap-2"
                 aria-label="Edit Kamar"
               >
                 <Edit2 className="w-5 h-5" />
@@ -231,7 +230,7 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
               </button>
               <button
                 onClick={() => handleDeleteRoom(room.id)}
-                className="bg-red-600 text-white p-2 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-1"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
                 aria-label="Hapus Kamar"
               >
                 <Trash2 className="w-5 h-5" />

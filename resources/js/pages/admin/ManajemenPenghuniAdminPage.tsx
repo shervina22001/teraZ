@@ -100,17 +100,24 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({
         status: statusPenghuni,
       },
       {
-        preserveState: false,
+        preserveState: true,      // biar modal sukses tetap kebuka sampai kita reload manual
         preserveScroll: true,
         onSuccess: () => {
           setShowEditModal(false);
           setSelectedPenghuni(null);
           resetForm();
-          // refresh partial data (sesuai kode pertama)
-          router.reload({ only: ['tenants'] });
-          // UI feedback dari kode kedua
+
+          // Tampilkan success alert dulu
           setAlertMessage('Update Berhasil!');
           setShowSuccessAlert(true);
+
+          // Reload data setelah user sempat melihat pesan sukses
+          setTimeout(() => {
+            // boleh pakai window.location.reload(); kalau kamu mau full refresh
+            router.reload({ only: ['tenants', 'availableRooms'] });
+            // atau kalau cuma tenants aja:
+            // router.reload({ only: ['tenants'] });
+          }, 1200);
         },
         onError: (errors) => {
           console.error('Update failed:', errors);
@@ -199,7 +206,7 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({
   };
 
   return (
-    <LayoutAdmin user={user} currentPath="/admin/tenants" title="Manajemen Penghuni - Arzeta Co-Living">
+    <LayoutAdmin user={user} currentPath="/admin/tenants">
       {/* Title & Add Button */}
       <div className="mb-8 mt-6 flex justify-between items-center">
         <h1 className="text-3xl font-semibold text-[#7A2B1E]">Manajemen Penghuni Kos</h1>
@@ -281,21 +288,23 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({
             </div>
 
             {/* Actions */}
-            <div className="ml-6 flex items-center gap-2">
+            <div className="ml-6 flex items-center gap-4">
               <button
                 onClick={() => handleEditClick(penghuni)}
-                className="bg-[#654e3d] text-white p-2 rounded-lg hover:bg-[#412E27] transition-colors"
+                className="bg-[#4e5f7d] text-white px-4 py-2 rounded-lg hover:bg-[#3d4c65] transition-colors flex items-center gap-2"
                 title="Edit Penghuni"
               >
-                <Edit2 className="w-5 h-5" />
+                <Edit2 className="w-4 h-4" />
+                <span className="font-medium">Edit</span>
               </button>
               {/* Hapus -> dialog konfirmasi (UI kedua), aksi backend (pertama) */}
               <button
                 onClick={() => handleDeleteClick(penghuni.id)}
-                className="bg-red-600 text-white p-2 rounded-lg hover:bg-red-700 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
                 title="Hapus Penghuni"
               >
-                <Trash2 className="w-5 h-5" />
+                <Trash2 className="w-4 h-4" />
+                <span className="font-medium">Hapus</span>
               </button>
             </div>
           </div>

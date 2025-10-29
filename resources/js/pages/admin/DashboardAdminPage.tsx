@@ -230,7 +230,7 @@ const DashboardAdminPage: React.FC<DashboardAdminProps> = ({ user, stats, chart_
                     </div>
 
                     {/* Keuntungan Bersih (ALL TIME) */}
-                    <div className={`rounded-lg p-6 text-[#F5F2EE] ${stats.finance.total_profit >= 0 ? 'bg-[#2FA336]' : 'bg-red-900'}`}>
+                    <div className={`rounded-lg p-6 text-[#F5F2EE] ${stats.finance.total_profit >= 0 ? 'bg-[#237728]' : 'bg-red-900'}`}>
                         <div className="flex justify-between items-center">
                             <div>
                                 <h3 className="text-lg font-medium mb-3">Keuntungan Bersih</h3>
