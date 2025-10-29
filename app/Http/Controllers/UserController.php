@@ -54,11 +54,11 @@ class UserController extends Controller
         return Inertia::render('user/ProfilePage', [
             'user' => [
                 'id'       => $u->id,
-                'name'     => $tenant->nama,
+                'name'     => $tenant->nama ?? $u->name, 
                 'username' => $tenant->user?->email ?? $u->username,
                 'phone'    => $tenant->kontak,
                 'role'     => $u->role,
-                'room'     => optional($tenant?->room)->nomor_kamar,
+                'room'     => $tenant->room->nomor_kamar ?? null, 
             ],
             'tenant' => [
                 'id'            => $tenant->id,

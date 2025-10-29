@@ -71,14 +71,15 @@ class PaymentController extends Controller
 
         return Inertia::render('user/PembayaranPage', [
             'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
+                'id'       => $user->id,
+                'name'     => $tenant->nama ?? $user->name,   
                 'username' => $user->username,
-                'phone' => $user->phone,
-                'role' => $user->role,
+                'phone'    => $user->phone,
+                'role'     => $user->role,
+                'room'     => $tenant->room->nomor_kamar ?? null,
             ],
             'payments' => $payments,
-            'stats' => $stats,
+            'stats'    => $stats,
         ]);
     }
 
