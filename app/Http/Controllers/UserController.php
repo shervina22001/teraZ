@@ -16,66 +16,59 @@ class UserController extends Controller
     {
         $u = $request->user();
 
-        // Find tenant by matching nama with user's name or kontak with user's phone
+        // Cari tenant pakai user_id langsung (lebih aman daripada nama/kontak)
         $tenant = Tenant::with('room')
-            ->where('nama', $u->name)
-            ->orWhere('kontak', $u->phone)
+            ->where('user_id', $u->id)
             ->latest('id')
             ->first();
 
-        // Map data room (kalau ada)
-        $room = $tenant && $tenant->room ? [
-            'number'        => $tenant->room->nomor_kamar ?? '01',
-            'type'          => $tenant->room->tipe ?? 'Single Room',
-            'monthly_rent'  => $tenant->room->harga ?? 850000,
-            'status'        => $tenant->room->status ?? 'occupied',
-        ] : [
-            'number'        => '01',
-            'type'          => 'Single Room',
-            'monthly_rent'  => 850000,
-            'status'        => 'occupied',
-        ];
+        if (!$tenant) {
+            return redirect()->route('dashboard')->with('error', 'Data tenant tidak ditemukan.');
+        }
 
-        // Map data kontrak (kalau ada)
-        $contract = $tenant ? [
-            'start_date'      => optional($tenant->tanggal_mulai)->format('Y-m-d') ?? '2025-09-01',
-            'end_date'        => optional($tenant->tanggal_selesai)->format('Y-m-d') ?? '2025-12-01',
+        // Map data room
+        $room = $tenant->room ? [
+            'number'        => $tenant->room->nomor_kamar,
+            'type'          => $tenant->room->tipe,
+            'monthly_rent'  => $tenant->room->harga,
+            'status'        => $tenant->room->status,
+        ] : null;
+
+        // Map data kontrak
+        $contract = [
+            'start_date'      => optional($tenant->tanggal_mulai)->format('Y-m-d'),
+            'end_date'        => optional($tenant->tanggal_selesai)->format('Y-m-d'),
             'duration_months' => ($tenant->tanggal_mulai && $tenant->tanggal_selesai)
                 ? \Illuminate\Support\Carbon::parse($tenant->tanggal_mulai)
                     ->diffInMonths(\Illuminate\Support\Carbon::parse($tenant->tanggal_selesai))
-                : 3,
-            'status'          => $tenant->status ?? 'active',
-            'note'            => $tenant->catatan ?? '',
-        ] : [
-            'start_date'      => '2025-09-01',
-            'end_date'        => '2025-12-01',
-            'duration_months' => 3,
-            'status'          => 'active',
-            'note'            => '',
+                : null,
+            'status'          => $tenant->status,
+            'note'            => $tenant->catatan,
         ];
 
-        // Get profile photo URL
-        $profilePhoto = asset('teraZ/testi1.png'); // Default
-        if ($tenant && $tenant->profile_photo) {
-            $profilePhoto = asset('storage/' . $tenant->profile_photo);
-        }
+        // Foto profil
+        $profilePhoto = $tenant->profile_photo
+            ? asset('storage/' . $tenant->profile_photo)
+            : asset('teraZ/testi1.png');
 
         return Inertia::render('user/ProfilePage', [
             'user' => [
                 'id'       => $u->id,
-                'name'     => $u->name,
-                'username' => $u->username,
-                'phone'    => $u->phone,
+                'name'     => $tenant->nama,
+                'username' => $tenant->user?->email ?? $u->username,
+                'phone'    => $tenant->kontak,
                 'role'     => $u->role,
+                'room'     => optional($tenant?->room)->nomor_kamar,
             ],
             'tenant' => [
-                'id' => $tenant->id ?? null,
+                'id'            => $tenant->id,
                 'profile_photo' => $profilePhoto,
             ],
-            'room' => $room,
+            'room'     => $room,
             'contract' => $contract,
         ]);
     }
+
 
     /**
      * Update profile photo

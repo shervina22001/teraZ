@@ -10,24 +10,27 @@ use Inertia\Inertia;
 class MaintenanceController extends Controller
 {
     /**
-     * Menampilkan halaman laporan maintenance (hanya untuk tenant).
+     * Halaman laporan maintenance (TENANT).
      */
     public function index(Request $request)
     {
         $u = $request->user();
 
-        // Cari tenant berdasarkan nama atau kontak user
-        $tenant = Tenant::where('nama', $u->name)
-            ->orWhere('kontak', $u->phone)
+        // Lebih akurat kalau punya kolom user_id di tenants
+        $tenant = Tenant::where('user_id', $u->id)    // pakai ini jika ada
+            ->orWhere('nama', $u->name)               // fallback
+            ->orWhere('kontak', $u->phone)            // fallback
             ->latest('id')
             ->first();
 
-        // Kalau tenant tidak ditemukan → redirect ke dashboard
+        // Jika tenant tidak ditemukan, jangan arahkan ke 'dashboard' (tidak ada).
+        // Alihkan ke profil agar user bisa melengkapi data, atau kembali ke halaman ini.
         if (!$tenant) {
-            return redirect()->route('dashboard')->with('error', 'Data tenant tidak ditemukan.');
+            return redirect()
+                ->route('profile') // atau ->route('maintenance.index') / ->back()
+                ->with('error', 'Data tenant tidak ditemukan. Silakan lengkapi profil terlebih dahulu.');
         }
 
-        // Ambil laporan maintenance milik tenant dengan relasi room
         $reports = MaintenanceRequest::where('tenant_id', $tenant->id)
             ->with(['room'])
             ->orderByDesc('dilaporkan_pada')
@@ -40,7 +43,6 @@ class MaintenanceController extends Controller
                     'reported_date' => optional($report->dilaporkan_pada)->format('d M Y'),
                     'resolved_date' => $report->status === 'done' ? optional($report->updated_at)->format('d M Y') : null,
                     'room_number' => $report->room->nomor_kamar ?? '-',
-                    // Priority dalam Indonesian untuk display
                     'priority' => match ($report->priority) {
                         'low' => 'Rendah',
                         'medium' => 'Sedang',
@@ -84,7 +86,6 @@ class MaintenanceController extends Controller
 
     /**
      * Simpan laporan baru dari tenant.
-     * TENANT TIDAK BISA SET PRIORITY - hanya admin yang bisa.
      */
     public function store(Request $request)
     {
@@ -95,27 +96,31 @@ class MaintenanceController extends Controller
             'description' => 'required|string|max:1000',
         ]);
 
-        // Cari tenant yang sesuai dengan user
-        $tenant = Tenant::where('nama', $u->name)
+        $tenant = Tenant::where('user_id', $u->id)
+            ->orWhere('nama', $u->name)
             ->orWhere('kontak', $u->phone)
             ->latest('id')
             ->first();
 
         if (!$tenant) {
-            return back()->with('error', 'Tenant tidak ditemukan. Laporan gagal dikirim.');
+            return redirect()
+                ->route('profile') // jangan ke 'dashboard'
+                ->with('error', 'Tenant tidak ditemukan. Laporan gagal dikirim.');
         }
 
-        // Simpan laporan baru - priority default 'medium', admin yang akan update
         MaintenanceRequest::create([
             'tenant_id' => $tenant->id,
             'room_id' => $tenant->room_id,
             'judul' => $request->title,
             'deskripsi' => $request->description,
-            'priority' => 'medium', // Default priority
+            'priority' => 'medium',
             'status' => 'pending',
             'dilaporkan_pada' => now(),
         ]);
 
-        return back()->with('success', 'Laporan kerusakan berhasil dikirim.');
+        // kembali ke halaman maintenance tenant
+        return redirect()
+            ->route('maintenance.index')
+            ->with('success', 'Laporan kerusakan berhasil dikirim.');
     }
 }

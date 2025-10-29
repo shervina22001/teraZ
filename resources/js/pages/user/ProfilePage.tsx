@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import Layout from '@/components/teraZ/user/LayoutUser';
-import { Mail, Phone, UserRoundCheck, Calendar, ArrowRight, ArrowLeft, Camera, X } from 'lucide-react';
+import { Phone, UserRoundCheck, Calendar, ArrowRight, Camera, X } from 'lucide-react';
 
 interface User {
     id: number;
@@ -185,7 +185,7 @@ const Profile: React.FC<Props> = ({ user, tenant, room, contract }) => {
                         <div className="space-y-8">
                             <div>
                                 <p className="text-sm font-medium text-[#7B695D] mb-1">Nomor Kamar</p>
-                                <p className="text-3xl font-semibold text-[#412E27]">{room.number}</p>
+                                <p className="text-2xl font-semibold text-[#412E27]">{room.number}</p>
                             </div>
 
                             <div>
@@ -221,19 +221,9 @@ const Profile: React.FC<Props> = ({ user, tenant, room, contract }) => {
                         </div>
 
                         <div className="flex items-start gap-5">
-                            <ArrowLeft className="w-7 h-7 text-[#615348]" />
-                            <div>
-                                <p className="text-sm font-medium text-[#7B695D] mb-1">Tanggal Keluar</p>
-                                <p className="text-lg font-semibold text-[#412E27]">
-                                    {formatDate(contract.end_date)}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-start gap-5">
                             <Calendar className="w-7 h-7 text-[#615348] mt-1" />
                             <div>
-                                <p className="text-sm font-medium text-[#7B695D] mb-1">Durasi Sewa</p>
+                                <p className="text-sm font-medium text-[#7B695D] mb-1">Lama Sewa</p>
                                 <p className="text-lg font-semibold text-[#412E27]">
                                     {contract.duration_months} Bulan
                                 </p>
