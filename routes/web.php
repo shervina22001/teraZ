@@ -34,7 +34,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->
 Route::middleware(['auth', 'role:tenant'])->group(function () {
     // Profile
     Route::get('/profile', [UserController::class, 'profile'])->name('profile');
-    Route::post('/profile/update-photo', [UserController::class, 'updateProfilePhoto'])->name('profile.updatePhoto'); // Add this
+    Route::post('/profile/update-photo', [UserController::class, 'updateProfilePhoto'])->name('profile.updatePhoto');
 
     // Maintenance Reports (Tenant POV)
     Route::get('/lapor-kerusakan', [MaintenanceController::class, 'index'])->name('maintenance.index');

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { router } from '@inertiajs/react';
 import LayoutAdmin from '@/components/teraZ/admin/LayoutAdmin';
-import {Calendar, DollarSign, CheckCircle, X, Plus, Clock, AlertTriangle, Phone, Home, Image as ImageIcon, Eye, ZoomIn, AlertCircle, Trash2} from 'lucide-react';
+import {Calendar, DollarSign, CheckCircle, X, Plus, Clock, AlertTriangle, Phone, Home, Image, Eye, ZoomIn, AlertCircle, Trash2, ChevronLeft, ChevronRight} from 'lucide-react';
 
 interface KeuanganAdminProps {
   user: {
@@ -71,6 +71,10 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [selectedImage, setSelectedImage] = useState<string>('');
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
   // Create payment form
   const [tenantId, setTenantId] = useState('');
   const [paymentType, setPaymentType] = useState('rent');
@@ -95,19 +99,32 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
 
   const months = [
-    'Januari',
-    'Februari',
-    'Maret',
-    'April',
-    'Mei',
-    'Juni',
-    'Juli',
-    'Agustus',
-    'September',
-    'Oktober',
-    'November',
-    'Desember',
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
   ];
+
+  // Calculate pagination
+  const totalPages = Math.ceil(payments.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentPayments = payments.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      handlePageChange(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      handlePageChange(currentPage + 1);
+    }
+  };
 
   const getStatusColor = (statusColor: string) => {
     switch (statusColor) {
@@ -138,6 +155,7 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
   };
 
   const handleFilterChange = (newStatus: string) => {
+    setCurrentPage(1);
     const url = newStatus !== 'all' ? `/admin/keuangan?status=${newStatus}` : '/admin/keuangan';
     router.get(url, {}, {
       preserveState: true,
@@ -370,7 +388,6 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
             Generate Tagihan
           </button>
 
-          {/* Disamakan modelnya dengan “Tambah Penghuni”: warna hijau-kopi & icon Plus */}
           <button
             onClick={() => setShowCreateModal(true)}
             className="px-6 py-3 bg-[#6B5D52] text-white rounded-xl shadow-xl hover:bg-[#4d3e33] transition-colors flex items-center gap-2"
@@ -421,13 +438,13 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
       </div>
 
       {/* Payments List */}
-      <div className="space-y-4">
+      <div className="space-y-4 mb-8">
         {payments.length === 0 ? (
           <div className="bg-white rounded-lg p-12 text-center">
             <p className="text-gray-500 text-lg">Tidak ada tagihan pembayaran</p>
           </div>
         ) : (
-          payments.map((payment) => (
+          currentPayments.map((payment) => (
             <div
               key={payment.id}
               className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden border border-gray-100"
@@ -456,7 +473,7 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
                     <div className="flex-shrink-0">
                       <div className="w-32 h-32 rounded-lg bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300">
                         <div className="text-center">
-                          <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                          <Image className="w-12 h-12 text-gray-400 mx-auto mb-2" />
                           <p className="text-xs text-gray-500">Tidak ada bukti</p>
                         </div>
                       </div>
@@ -465,7 +482,6 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
 
                   {/* Middle: Payment Info */}
                   <div className="flex-1">
-                    {/* Header */}
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <div className="flex items-center gap-3 mb-2">
@@ -494,7 +510,6 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
                       </div>
                     </div>
 
-                    {/* Payment Details Grid */}
                     <div className="grid grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg mb-4">
                       <div>
                         <p className="text-xs text-gray-500 mb-1">Periode</p>
@@ -516,7 +531,6 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
                       </div>
                     </div>
 
-                    {/* Payment Method */}
                     {payment.payment_method && (
                       <div className="flex items-center gap-6 text-sm mb-3">
                         <div className="flex items-center gap-2 text-gray-700">
@@ -538,7 +552,6 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
                       </div>
                     )}
 
-                    {/* Notes */}
                     {payment.notes && (
                       <div className="p-3 bg-amber-50 border-l-4 border-amber-400 rounded">
                         <p className="text-sm text-amber-900">
@@ -597,6 +610,63 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
           ))
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {payments.length > 0 && totalPages > 1 && (
+        <div className="mb-8">
+          <div className="flex items-center justify-center gap-4">
+            {/* Previous Button */}
+            <button
+              onClick={handlePrevPage}
+              disabled={currentPage === 1}
+              className={`p-2 rounded-full transition-colors ${
+                currentPage === 1
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-[#7A2B1E] text-white hover:bg-[#5C1F14]'
+              }`}
+            >
+              <ChevronLeft className="w-5 h-5" />
+              <span className="font-medium"></span>
+            </button>
+
+            {/* Page Indicators */}
+            <div className="flex items-center gap-2">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => handlePageChange(page)}
+                  className={`w-10 h-10 rounded-full font-semibold transition-all ${
+                    currentPage === page
+                      ? 'bg-[#7A2B1E] text-white scale-110 shadow-lg'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+
+            {/* Next Button */}
+            <button
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+              className={`p-2 rounded-full transition-colors ${
+                currentPage === totalPages
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-[#7A2B1E] text-white hover:bg-[#5C1F14]'
+              }`}
+            >
+              <span className="font-medium"></span>
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Page Info */}
+          <div className="text-center text-sm text-gray-600 mt-4">
+            Menampilkan {startIndex + 1}-{Math.min(endIndex, payments.length)} dari {payments.length} tagihan
+          </div>
+        </div>
+      )}
 
       {/* Detail Modal */}
       {showDetailModal && selectedPayment && (
@@ -1006,26 +1076,13 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
         </div>
       )}
 
-      {/* Approve Modal */}
+      {/* Approve, Reject, Success, Error Modals */}
       {showApproveModal && selectedPayment && (
         <div className="text-black fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-8 max-w-md w-full relative">
-            <button
-              onClick={() => {
-                setShowApproveModal(false);
-                setSelectedPayment(null);
-              }}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-            >
-              <X className="w-6 h-6" />
-            </button>
-
-            <div className="flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mx-auto mb-4">
-              <CheckCircle className="w-8 h-8 text-green-600" />
-            </div>
-
+            <button onClick={() => {setShowApproveModal(false);setSelectedPayment(null);}} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"><X className="w-6 h-6" /></button>
+            <div className="flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mx-auto mb-4"><CheckCircle className="w-8 h-8 text-green-600" /></div>
             <h2 className="text-2xl font-bold text-[#412E27] mb-3 text-center">Setujui Pembayaran</h2>
-
             <div className="bg-gray-50 rounded-lg p-4 mb-6">
               <p className="text-sm text-gray-600">Tenant</p>
               <p className="text-lg font-semibold text-[#412E27]">{selectedPayment.tenant_name}</p>
@@ -1033,173 +1090,76 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
               <p className="text-base font-medium text-[#412E27]">{selectedPayment.period}</p>
               <p className="text-sm text-gray-600 mt-2">Jumlah</p>
               <p className="text-xl font-bold text-[#7A2B1E]">Rp {rupiah(selectedPayment.amount)}</p>
-              {selectedPayment.payment_method && (
-                <>
-                  <p className="text-sm text-gray-600 mt-2">Metode</p>
-                  <p className="text-base font-medium text-[#412E27]">
-                    {selectedPayment.payment_method.toUpperCase()}
-                    {selectedPayment.reference && ` - ${selectedPayment.reference}`}
-                  </p>
-                </>
-              )}
             </div>
-
-            <p className="text-center text-gray-600 mb-6">
-              Apakah Anda yakin ingin menyetujui pembayaran ini?
-            </p>
-
+            <p className="text-center text-gray-600 mb-6">Apakah Anda yakin ingin menyetujui pembayaran ini?</p>
             <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowApproveModal(false);
-                  setSelectedPayment(null);
-                }}
-                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                onClick={handleApprove}
-                className="flex-1 bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
-              >
-                Setujui
-              </button>
+              <button onClick={() => {setShowApproveModal(false);setSelectedPayment(null);}} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors">Batal</button>
+              <button onClick={handleApprove} className="flex-1 bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors">Setujui</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Reject Modal */}
       {showRejectModal && selectedPayment && (
         <div className="text-black fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-8 max-w-md w-full relative">
-            <button
-              onClick={() => {
-                setShowRejectModal(false);
-                setSelectedPayment(null);
-                setRejectionReason('');
-              }}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-            >
-              <X className="w-6 h-6" />
-            </button>
-
-            <div className="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mx-auto mb-4">
-              <X className="w-8 h-8 text-red-600" />
-            </div>
-
+            <button onClick={() => {setShowRejectModal(false);setSelectedPayment(null);setRejectionReason('');}} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"><X className="w-6 h-6" /></button>
+            <div className="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mx-auto mb-4"><X className="w-8 h-8 text-red-600" /></div>
             <h2 className="text-2xl font-bold text-[#412E27] mb-3 text-center">Tolak Pembayaran</h2>
-
             <div className="bg-gray-50 rounded-lg p-4 mb-4">
               <p className="text-sm text-gray-600">Tenant</p>
               <p className="text-lg font-semibold text-[#412E27]">{selectedPayment.tenant_name}</p>
               <p className="text-sm text-gray-600 mt-2">Periode</p>
               <p className="text-base font-medium text-[#412E27]">{selectedPayment.period}</p>
             </div>
-
             <div className="mb-6">
-              <label className="block text-sm font-medium text-[#412E27] mb-2">
-                Alasan Penolakan (Opsional)
-              </label>
-              <textarea
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
-                placeholder="Jelaskan alasan penolakan..."
-                rows={4}
-              />
+              <label className="block text-sm font-medium text-[#412E27] mb-2">Alasan Penolakan (Opsional)</label>
+              <textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 resize-none" placeholder="Jelaskan alasan penolakan..." rows={4} />
             </div>
-
             <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowRejectModal(false);
-                  setSelectedPayment(null);
-                  setRejectionReason('');
-                }}
-                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                onClick={handleReject}
-                className="flex-1 bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors"
-              >
-                Tolak
-              </button>
+              <button onClick={() => {setShowRejectModal(false);setSelectedPayment(null);setRejectionReason('');}} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors">Batal</button>
+              <button onClick={handleReject} className="flex-1 bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors">Tolak</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Success Alert Modal */}
       {showSuccessAlert && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[70] p-4">
           <div className="bg-white rounded-xl p-8 max-w-sm w-full relative">
             <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                <CheckCircle className="w-10 h-10 text-green-600" />
-              </div>
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4"><CheckCircle className="w-10 h-10 text-green-600" /></div>
               <h3 className="text-xl font-bold text-[#412E27] mb-2">Berhasil!</h3>
               <p className="text-[#6B5D52] mb-6">{alertMessage}</p>
-              <button
-                onClick={() => setShowSuccessAlert(false)}
-                className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#4d3e33] transition-colors"
-              >
-                OK
-              </button>
+              <button onClick={() => setShowSuccessAlert(false)} className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#4d3e33] transition-colors">OK</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Error Alert Modal */}
       {showErrorAlert && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[70] p-4">
           <div className="bg-white rounded-xl p-8 max-w-sm w-full relative">
             <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                <AlertCircle className="w-10 h-10 text-red-600" />
-              </div>
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4"><AlertCircle className="w-10 h-10 text-red-600" /></div>
               <h3 className="text-xl font-bold text-[#412E27] mb-2">Gagal!</h3>
               <p className="text-[#6B5D52] mb-6">{alertMessage}</p>
-              <button
-                onClick={() => setShowErrorAlert(false)}
-                className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#4d3e33] transition-colors"
-              >
-                OK
-              </button>
+              <button onClick={() => setShowErrorAlert(false)} className="w-full bg-[#6B5D52] text-white py-3 rounded-lg font-medium hover:bg-[#4d3e33] transition-colors">OK</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Confirm Delete Dialog */}
       {showConfirmDelete && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[70] p-4">
           <div className="bg-white rounded-xl p-8 max-w-sm w-full relative">
             <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
-                <Trash2 className="w-10 h-10 text-amber-600" />
-              </div>
+              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4"><Trash2 className="w-10 h-10 text-amber-600" /></div>
               <h3 className="text-xl font-bold text-[#412E27] mb-2">Konfirmasi Hapus</h3>
               <p className="text-[#6B5D52] mb-6">Apakah Anda yakin ingin menghapus tagihan ini?</p>
               <div className="flex gap-3 w-full">
-                <button
-                  onClick={() => {
-                    setShowConfirmDelete(false);
-                    setPendingDeleteId(null);
-                  }}
-                  className="flex-1 bg-gray-200 text-[#412E27] py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors"
-                >
-                  Batal
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  className="flex-1 bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors"
-                >
-                  Hapus
-                </button>
+                <button onClick={() => {setShowConfirmDelete(false);setPendingDeleteId(null);}} className="flex-1 bg-gray-200 text-[#412E27] py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors">Batal</button>
+                <button onClick={confirmDelete} className="flex-1 bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors">Hapus</button>
               </div>
             </div>
           </div>

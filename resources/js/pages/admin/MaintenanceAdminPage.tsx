@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { router } from '@inertiajs/react';
 import LayoutAdmin from '@/components/teraZ/admin/LayoutAdmin';
-import { ClockAlert, LoaderCircle, CheckCircle, Calendar, User, Phone, ArrowUpDown, ArrowUp, ArrowDown, X, DollarSign } from 'lucide-react';
+import { ClockAlert, LoaderCircle, CheckCircle, Calendar, User, Phone, ArrowUpDown, ArrowUp, ArrowDown, X, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface MaintenanceAdminProps {
     user: {
@@ -48,11 +48,37 @@ const MaintenanceAdmin: React.FC<MaintenanceAdminProps> = ({ user, laporans, sta
     const [filterPriority, setFilterPriority] = useState<string>(filters.priority || 'all');
     const [sortOrder, setSortOrder] = useState<string>(filters.sort || 'desc');
 
+    // Pagination
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
+
     // Modal states
     const [showCostModal, setShowCostModal] = useState(false);
     const [selectedLaporanId, setSelectedLaporanId] = useState<number | null>(null);
-    const [costInput, setCostInput] = useState<string>(''); // Make sure it's string, not number
+    const [costInput, setCostInput] = useState<string>('');
 
+    // Calculate pagination
+    const totalPages = Math.ceil(laporans.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentLaporans = laporans.slice(startIndex, endIndex);
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handlePrevPage = () => {
+        if (currentPage > 1) {
+            handlePageChange(currentPage - 1);
+        }
+    };
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) {
+            handlePageChange(currentPage + 1);
+        }
+    };
 
     const getStatusColor = (statusColor: string) => {
         switch (statusColor) {
@@ -109,14 +135,12 @@ const MaintenanceAdmin: React.FC<MaintenanceAdminProps> = ({ user, laporans, sta
     };
 
     const handleStatusChange = (id: number, newStatus: string) => {
-        // If changing to "done", open cost modal
         if (newStatus === 'done') {
             setSelectedLaporanId(id);
             const laporan = laporans.find(l => l.id === id);
             setCostInput(laporan?.biaya?.toString() || '');
             setShowCostModal(true);
         } else {
-            // For other statuses, update directly
             router.patch(
                 `/admin/maintenance/${id}`,
                 { status: newStatus },
@@ -185,6 +209,7 @@ const MaintenanceAdmin: React.FC<MaintenanceAdminProps> = ({ user, laporans, sta
     };
 
     const handleFilterChange = (newStatus: string, newPriority: string, newSort: string) => {
+        setCurrentPage(1);
         const params: any = {};
         if (newStatus !== 'all') params.status = newStatus;
         if (newPriority !== 'all') params.priority = newPriority;
@@ -212,13 +237,6 @@ const MaintenanceAdmin: React.FC<MaintenanceAdminProps> = ({ user, laporans, sta
             return <ArrowUp className="w-5 h-5" />;
         }
         return <ArrowUpDown className="w-5 h-5" />;
-    };
-
-    const formatCurrency = (value: string) => {
-        // Remove non-numeric characters
-        const numericValue = value.replace(/\D/g, '');
-        // Format with thousand separators
-        return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     };
 
     return (
@@ -308,13 +326,13 @@ const MaintenanceAdmin: React.FC<MaintenanceAdminProps> = ({ user, laporans, sta
             </div>
 
             {/* Laporan List */}
-            <div className="space-y-6">
+            <div className="space-y-6 mb-8">
                 {laporans.length === 0 ? (
                     <div className="bg-white rounded-lg p-12 text-center">
                         <p className="text-gray-500 text-lg">Tidak ada laporan maintenance</p>
                     </div>
                 ) : (
-                    laporans.map((laporan) => (
+                    currentLaporans.map((laporan) => (
                         <div
                             key={laporan.id}
                             className="bg-[#F5F2EE] rounded-lg shadow-sm px-8 py-8 flex items-start justify-between"
@@ -361,7 +379,7 @@ const MaintenanceAdmin: React.FC<MaintenanceAdminProps> = ({ user, laporans, sta
                                     </p>
 
                                     {/* Cost if available */}
-                                    {laporan.biaya && (
+                                    {laporan.biaya !== null && (
                                         <p className="text-sm font-medium text-[#412E27]">
                                             Biaya: Rp {laporan.biaya.toLocaleString('id-ID')}
                                         </p>
@@ -425,13 +443,68 @@ const MaintenanceAdmin: React.FC<MaintenanceAdminProps> = ({ user, laporans, sta
                 )}
             </div>
 
-            {/* Cost Input Modal */}
+            {/* Pagination Controls */}
+            {laporans.length > 0 && totalPages > 1 && (
+                <div className="mb-8">
+                    <div className="flex items-center justify-center gap-4">
+                        {/* Previous Button */}
+                        <button
+                            onClick={handlePrevPage}
+                            disabled={currentPage === 1}
+                            className={`p-2 rounded-full transition-colors ${
+                                currentPage === 1
+                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                    : 'bg-[#7A2B1E] text-white hover:bg-[#5C1F14]'
+                            }`}
+                        >
+                            <ChevronLeft className="w-5 h-5" />
+                            <span className="font-medium"></span>
+                        </button>
+
+                        {/* Page Indicators */}
+                        <div className="flex items-center gap-2">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                <button
+                                    key={page}
+                                    onClick={() => handlePageChange(page)}
+                                    className={`w-10 h-10 rounded-full font-semibold transition-all ${
+                                        currentPage === page
+                                            ? 'bg-[#7A2B1E] text-white scale-110 shadow-lg'
+                                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                    }`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Next Button */}
+                        <button
+                            onClick={handleNextPage}
+                            disabled={currentPage === totalPages}
+                            className={`p-2 rounded-full transition-colors ${
+                                currentPage === totalPages
+                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                    : 'bg-[#7A2B1E] text-white hover:bg-[#5C1F14]'
+                            }`}
+                        >
+                            <span className="font-medium"></span>
+                            <ChevronRight className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    {/* Page Info */}
+                    <div className="text-center text-sm text-gray-600 mt-4">
+                        Menampilkan {startIndex + 1}-{Math.min(endIndex, laporans.length)} dari {laporans.length} laporan
+                    </div>
+                </div>
+            )}
+
             {/* Cost Input Modal */}
             {showCostModal && (
                 <div
                     className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
                     onClick={(e) => {
-                        // Close modal if clicking backdrop
                         if (e.target === e.currentTarget) {
                             setShowCostModal(false);
                             setSelectedLaporanId(null);
@@ -475,16 +548,13 @@ const MaintenanceAdmin: React.FC<MaintenanceAdminProps> = ({ user, laporans, sta
                                     type="text"
                                     value={costInput}
                                     onChange={(e) => {
-                                        // Only allow numbers
                                         const value = e.target.value.replace(/[^0-9]/g, '');
                                         setCostInput(value);
                                     }}
                                     onKeyDown={(e) => {
-                                        // Allow Enter to submit
                                         if (e.key === 'Enter') {
                                             handleCostSubmit();
                                         }
-                                        // Allow Escape to close
                                         if (e.key === 'Escape') {
                                             setShowCostModal(false);
                                             setSelectedLaporanId(null);
@@ -528,7 +598,6 @@ const MaintenanceAdmin: React.FC<MaintenanceAdminProps> = ({ user, laporans, sta
                     </div>
                 </div>
             )}
-
         </LayoutAdmin>
     );
 };

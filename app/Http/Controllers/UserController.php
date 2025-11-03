@@ -81,9 +81,8 @@ class UserController extends Controller
             'profile_photo' => 'required|image|mimes:jpeg,jpg,png|max:2048', // Max 2MB
         ]);
 
-        // Find tenant
-        $tenant = Tenant::where('nama', $user->name)
-            ->orWhere('kontak', $user->phone)
+        // Find tenant - KONSISTEN dengan method profile()
+        $tenant = Tenant::where('user_id', $user->id)
             ->latest('id')
             ->first();
 
@@ -109,7 +108,8 @@ class UserController extends Controller
 
             return back()->with('success', 'Foto profil berhasil diperbarui.');
         } catch (\Exception $e) {
-            return back()->with('error', 'Gagal memperbarui foto profil: ' . $e->getMessage());
+            \Log::error('Profile photo update failed: ' . $e->getMessage());
+            return back()->with('error', 'Gagal memperbarui foto profil.');
         }
     }
 

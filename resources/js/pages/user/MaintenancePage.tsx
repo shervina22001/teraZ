@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import Layout from '@/components/teraZ/user/LayoutUser';
-import { Calendar, CheckCircle, X, ChevronLeft, ChevronRight, FileUp } from 'lucide-react';
+import { Calendar, CheckCircle, X, ChevronLeft, ChevronRight, FileUp, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface User {
     id: number;
@@ -27,28 +27,118 @@ interface MaintenanceReport {
 interface MaintenancePageProps {
     user: User;
     reports: MaintenanceReport[];
+    filters?: {
+        status?: string;
+        priority?: string;
+        sort?: string;
+    };
 }
 
-const MaintenancePage: React.FC<MaintenancePageProps> = ({ user, reports }) => {
+const MaintenancePage: React.FC<MaintenancePageProps> = ({ user, reports, filters = {} }) => {
     const [issueType, setIssueType] = useState('');
     const [description, setDescription] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Debug: Log reports data
+    console.log('Reports data:', reports);
+    if (reports.length > 0) {
+        console.log('Sample report:', reports[0]);
+        console.log('Status values:', reports.map(r => r.status));
+        console.log('Priority values:', reports.map(r => r.priority));
+    }
+
+    // Filter states
+    const [filterStatus, setFilterStatus] = useState<string>(filters.status || 'all');
+    const [filterPriority, setFilterPriority] = useState<string>(filters.priority || 'all');
+    const [sortOrder, setSortOrder] = useState<string>(filters.sort || 'desc');
 
     // Alert states
     const [showSuccessAlert, setShowSuccessAlert] = useState(false);
     const [showErrorAlert, setShowErrorAlert] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
 
+    // Filter and sort reports
+    const getFilteredAndSortedReports = () => {
+        let filtered = [...reports];
+
+        // Filter by status
+        if (filterStatus !== 'all') {
+            filtered = filtered.filter(report => {
+                // Map display status ke filter value
+                const statusMap: { [key: string]: string } = {
+                    'menunggu': 'pending',
+                    'sedang proses': 'in_progress',
+                    'selesai': 'done'
+                };
+                
+                const reportStatus = report.status.toLowerCase();
+                const filterValue = filterStatus.toLowerCase();
+                
+                // Check jika status sama dengan filter atau mapped value
+                return reportStatus === filterValue || 
+                       reportStatus === statusMap[filterValue] ||
+                       statusMap[reportStatus] === filterValue;
+            });
+        }
+
+        // Filter by priority
+        if (filterPriority !== 'all') {
+            filtered = filtered.filter(report => {
+                // Map display priority ke filter value
+                const priorityMap: { [key: string]: string } = {
+                    'mendesak': 'urgent',
+                    'tinggi': 'high',
+                    'sedang': 'medium',
+                    'rendah': 'low'
+                };
+                
+                const reportPriority = report.priority.toLowerCase();
+                const filterValue = filterPriority.toLowerCase();
+                
+                // Check jika priority sama dengan filter atau mapped value
+                return reportPriority === filterValue || 
+                       reportPriority === priorityMap[filterValue] ||
+                       priorityMap[reportPriority] === filterValue;
+            });
+        }
+
+        // Sort by priority
+        const priorityOrder: { [key: string]: number } = {
+            'urgent': 1,
+            'mendesak': 1,
+            'high': 2,
+            'tinggi': 2,
+            'medium': 3,
+            'sedang': 3,
+            'low': 4,
+            'rendah': 4
+        };
+
+        filtered.sort((a, b) => {
+            const priorityA = priorityOrder[a.priority.toLowerCase()] || 999;
+            const priorityB = priorityOrder[b.priority.toLowerCase()] || 999;
+            
+            if (sortOrder === 'desc') {
+                return priorityA - priorityB; // High to low
+            } else {
+                return priorityB - priorityA; // Low to high
+            }
+        });
+
+        return filtered;
+    };
+
     // Pagination states
     const [currentPage, setCurrentPage] = useState(0);
     const itemsPerPage = 5;
-    const totalPages = Math.ceil(reports.length / itemsPerPage);
+    const filteredReports = getFilteredAndSortedReports();
+    const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
 
     // Get current page reports
     const getCurrentPageReports = () => {
         const startIndex = currentPage * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
-        return reports.slice(startIndex, endIndex);
+        return filteredReports.slice(startIndex, endIndex);
     };
 
     const handleNextPage = () => {
@@ -65,6 +155,28 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ user, reports }) => {
 
     const handlePageClick = (pageIndex: number) => {
         setCurrentPage(pageIndex);
+    };
+
+    const handleFilterChange = (newStatus: string, newPriority: string, newSort: string) => {
+        setCurrentPage(0); // Reset to first page when filter changes
+        setFilterStatus(newStatus);
+        setFilterPriority(newPriority);
+        setSortOrder(newSort);
+    };
+
+    const toggleSort = () => {
+        const newSort = sortOrder === 'desc' ? 'asc' : 'desc';
+        setSortOrder(newSort);
+        handleFilterChange(filterStatus, filterPriority, newSort);
+    };
+
+    const renderSortIcon = () => {
+        if (sortOrder === 'desc') {
+            return <ArrowDown className="w-4 h-4" />;
+        } else if (sortOrder === 'asc') {
+            return <ArrowUp className="w-4 h-4" />;
+        }
+        return <ArrowUpDown className="w-4 h-4" />;
     };
 
     const getStatusBadgeColor = (statusColor: string) => {
@@ -122,7 +234,6 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ user, reports }) => {
                     setAlertMessage('Laporan berhasil dikirim! Admin akan segera menindaklanjuti laporan Anda.');
                     setShowSuccessAlert(true);
                     
-                    // Refresh data and reset to first page
                     setCurrentPage(0);
                     router.reload({ only: ['reports'] });
                 },
@@ -152,17 +263,67 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ user, reports }) => {
                         <h2 className="text-2xl font-semibold text-[#412E27]">
                             Riwayat Laporan
                         </h2>
-                        {reports.length > 0 && (
-                            <p className="text-sm text-[#6B5D52]">
-                                Menampilkan {currentPage * itemsPerPage + 1}-{Math.min((currentPage + 1) * itemsPerPage, reports.length)} dari {reports.length} laporan
-                            </p>
-                        )}
+                        
+                        {/* Filter Controls */}
+                        <div className="flex gap-3">
+                            {/* Sort Button */}
+                            <button
+                                onClick={toggleSort}
+                                className="px-4 py-2 bg-white text-[#7A2B1E] rounded-lg shadow-md focus:outline-none text-sm font-medium cursor-pointer hover:bg-gray-50 transition-colors flex items-center gap-2"
+                                title={sortOrder === 'desc' ? 'Urutkan: Tinggi ke Rendah' : 'Urutkan: Rendah ke Tinggi'}
+                            >
+                                {renderSortIcon()}
+                                <span className="hidden md:inline">
+                                    {sortOrder === 'desc' ? 'Prioritas ↓' : 'Prioritas ↑'}
+                                </span>
+                            </button>
+
+                            {/* Priority Filter */}
+                            <select
+                                value={filterPriority}
+                                onChange={(e) => {
+                                    const newPriority = e.target.value;
+                                    setFilterPriority(newPriority);
+                                    handleFilterChange(filterStatus, newPriority, sortOrder);
+                                }}
+                                className="px-4 py-2 bg-white text-[#7A2B1E] rounded-lg shadow-md focus:outline-none text-sm font-medium cursor-pointer"
+                            >
+                                <option value="all">Semua Prioritas</option>
+                                <option value="urgent">Mendesak</option>
+                                <option value="high">Tinggi</option>
+                                <option value="medium">Sedang</option>
+                                <option value="low">Rendah</option>
+                            </select>
+
+                            {/* Status Filter */}
+                            <select
+                                value={filterStatus}
+                                onChange={(e) => {
+                                    const newStatus = e.target.value;
+                                    setFilterStatus(newStatus);
+                                    handleFilterChange(newStatus, filterPriority, sortOrder);
+                                }}
+                                className="px-4 py-2 bg-white text-[#7A2B1E] rounded-lg shadow-md focus:outline-none text-sm font-medium cursor-pointer"
+                            >
+                                <option value="all">Semua Status</option>
+                                <option value="pending">Menunggu</option>
+                                <option value="in_progress">Sedang Proses</option>
+                                <option value="done">Selesai</option>
+                            </select>
+                        </div>
                     </div>
 
+                    {/* Report Count Info */}
+                    {filteredReports.length > 0 && (
+                        <p className="text-sm text-[#6B5D52] mb-4">
+                            Menampilkan {currentPage * itemsPerPage + 1}-{Math.min((currentPage + 1) * itemsPerPage, filteredReports.length)} dari {filteredReports.length} laporan
+                        </p>
+                    )}
+
                     <div className="space-y-4 min-h-[400px]">
-                        {reports.length === 0 ? (
+                        {filteredReports.length === 0 ? (
                             <div className="bg-white rounded-lg p-8 text-center">
-                                <p className="text-gray-500">Belum ada laporan kerusakan</p>
+                                <p className="text-gray-500">Tidak ada laporan yang sesuai dengan filter</p>
                             </div>
                         ) : (
                             getCurrentPageReports().map((report) => (
@@ -312,7 +473,7 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ user, reports }) => {
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="ml-3 inline-flex items-center gap-2 px-4 py-3 bg-[#6B5D52] text-white text-sm font-medium rounded-md hover:bg-[#4d3e33] transition-colors"
+                                className="ml-3 inline-flex items-center gap-2 px-4 py-3 bg-[#6B5D52] text-white text-sm font-medium rounded-md hover:bg-[#4d3e33] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <FileUp className="w-4 h-4" />
                                 {isSubmitting ? 'Mengirim...' : 'Kirim Laporan'}

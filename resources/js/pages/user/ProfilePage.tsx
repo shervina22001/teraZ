@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import Layout from '@/components/teraZ/user/LayoutUser';
-import { Phone, UserRoundCheck, Calendar, ArrowRight, Camera, X } from 'lucide-react';
+import { Phone, UserRoundCheck, Calendar, ArrowRight, Camera, X, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface User {
     id: number;
@@ -13,7 +13,7 @@ interface User {
 
 interface Tenant {
     id: number;
-    profile_photo: string;
+    profile_photo: string; // Full URL dari backend dengan asset()
 }
 
 interface Room {
@@ -38,11 +38,19 @@ interface Props {
     contract: Contract;
 }
 
-const Profile: React.FC<Props> = ({ user, tenant, room }) => {
+const Profile: React.FC<Props> = ({ user, tenant, room, contract }) => {
     const [showPhotoModal, setShowPhotoModal] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string>('');
     const [isUploading, setIsUploading] = useState(false);
+    
+    // Alert states
+    const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+    const [showErrorAlert, setShowErrorAlert] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+
+    // Add timestamp to force image refresh
+    const [imageTimestamp, setImageTimestamp] = useState(Date.now());
 
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('id-ID', {
@@ -60,19 +68,30 @@ const Profile: React.FC<Props> = ({ user, tenant, room }) => {
         });
     };
 
+    // Get profile photo URL - backend sudah kirim full URL
+    const getProfilePhotoUrl = () => {
+        if (tenant.profile_photo) {
+            // Backend sudah kirim full URL dengan asset(), jadi langsung pakai
+            return `${tenant.profile_photo}?t=${imageTimestamp}`;
+        }
+        return '/teraZ/testi1.png'; // Default sesuai backend
+    };
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             // Validate file size (max 2MB)
             if (file.size > 2 * 1024 * 1024) {
-                alert('Ukuran file maksimal 2MB');
+                setAlertMessage('Ukuran file maksimal 2MB');
+                setShowErrorAlert(true);
                 e.target.value = '';
                 return;
             }
 
             // Validate file type
             if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
-                alert('Format file harus JPG, JPEG, atau PNG');
+                setAlertMessage('Format file harus JPG, JPEG, atau PNG');
+                setShowErrorAlert(true);
                 e.target.value = '';
                 return;
             }
@@ -90,7 +109,8 @@ const Profile: React.FC<Props> = ({ user, tenant, room }) => {
 
     const handleUpload = () => {
         if (!selectedFile) {
-            alert('Pilih foto terlebih dahulu');
+            setAlertMessage('Pilih foto terlebih dahulu');
+            setShowErrorAlert(true);
             return;
         }
 
@@ -107,10 +127,22 @@ const Profile: React.FC<Props> = ({ user, tenant, room }) => {
                 setSelectedFile(null);
                 setPreviewUrl('');
                 setIsUploading(false);
+                
+                // Update timestamp to force image refresh
+                setImageTimestamp(Date.now());
+                
+                setAlertMessage('Foto profil berhasil diperbarui!');
+                setShowSuccessAlert(true);
+                
+                // Reload tenant data
+                setTimeout(() => {
+                    router.reload({ only: ['tenant'] });
+                }, 500);
             },
             onError: (errors) => {
                 console.error('Upload failed:', errors);
-                alert('Gagal mengupload foto');
+                setAlertMessage('Gagal mengupload foto. Silakan coba lagi.');
+                setShowErrorAlert(true);
                 setIsUploading(false);
             },
         });
@@ -141,13 +173,18 @@ const Profile: React.FC<Props> = ({ user, tenant, room }) => {
                         <div className="flex items-start gap-4 mb-6">
                             <div className="relative">
                                 <img
-                                    src={tenant.profile_photo}
+                                    src={getProfilePhotoUrl()}
                                     alt={user.name}
                                     className="w-20 h-20 rounded-full object-cover border-3 border-[#412E27]"
+                                    onError={(e) => {
+                                        // Fallback to default avatar if image fails to load
+                                        const target = e.target as HTMLImageElement;
+                                        target.src = '/teraZ/testi1.png';
+                                    }}
                                 />
                                 <button
                                     onClick={() => setShowPhotoModal(true)}
-                                    className="absolute bottom-0 right-0 bg-[#7A2B1E] text-white p-1.5 rounded-full hover:bg-[#561E15] transition-colors"
+                                    className="absolute bottom-0 right-0 bg-[#7A2B1E] text-white p-1.5 rounded-full hover:bg-[#561E15] transition-colors shadow-lg"
                                     title="Ganti foto"
                                 >
                                     <Camera className="w-4 h-4" />
@@ -210,6 +247,7 @@ const Profile: React.FC<Props> = ({ user, tenant, room }) => {
                             <button
                                 onClick={handleCancel}
                                 className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+                                disabled={isUploading}
                             >
                                 <X className="w-6 h-6" />
                             </button>
@@ -237,18 +275,23 @@ const Profile: React.FC<Props> = ({ user, tenant, room }) => {
                                                 setPreviewUrl('');
                                             }}
                                             className="absolute top-2 right-1/2 transform translate-x-20 bg-red-600 text-white p-2 rounded-full hover:bg-red-700"
+                                            disabled={isUploading}
                                         >
                                             <X className="w-4 h-4" />
                                         </button>
+                                        <p className="text-center text-sm text-gray-600 mt-3">
+                                            {selectedFile?.name}
+                                        </p>
                                     </div>
                                 ) : (
-                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-[#7A2B1E] transition-colors">
                                         <input
                                             type="file"
                                             accept="image/jpeg,image/jpg,image/png"
                                             onChange={handleFileChange}
                                             className="hidden"
                                             id="photo-upload"
+                                            disabled={isUploading}
                                         />
                                         <label htmlFor="photo-upload" className="cursor-pointer">
                                             <Camera className="w-16 h-16 text-gray-400 mx-auto mb-3" />
@@ -266,17 +309,59 @@ const Profile: React.FC<Props> = ({ user, tenant, room }) => {
                             <div className="flex gap-3">
                                 <button
                                     onClick={handleCancel}
-                                    className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                                    className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors disabled:opacity-50"
                                     disabled={isUploading}
                                 >
                                     Batal
                                 </button>
                                 <button
                                     onClick={handleUpload}
-                                    className="flex-1 bg-[#7A2B1E] text-white py-3 rounded-lg font-medium hover:bg-[#561E15] transition-colors disabled:bg-gray-400"
+                                    className="flex-1 bg-[#7A2B1E] text-white py-3 rounded-lg font-medium hover:bg-[#561E15] transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                                     disabled={!selectedFile || isUploading}
                                 >
                                     {isUploading ? 'Mengupload...' : 'Upload'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Success Alert Modal */}
+                {showSuccessAlert && (
+                    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4">
+                        <div className="bg-white rounded-xl p-8 max-w-sm w-full relative">
+                            <div className="flex flex-col items-center text-center">
+                                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                                    <CheckCircle className="w-10 h-10 text-green-600" />
+                                </div>
+                                <h3 className="text-xl font-bold text-[#412E27] mb-2">Berhasil!</h3>
+                                <p className="text-[#6B5D52] mb-6">{alertMessage}</p>
+                                <button
+                                    onClick={() => setShowSuccessAlert(false)}
+                                    className="w-full bg-[#7A2B1E] text-white py-3 rounded-lg font-medium hover:bg-[#561E15] transition-colors"
+                                >
+                                    OK
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Error Alert Modal */}
+                {showErrorAlert && (
+                    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4">
+                        <div className="bg-white rounded-xl p-8 max-w-sm w-full relative">
+                            <div className="flex flex-col items-center text-center">
+                                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                                    <AlertCircle className="w-10 h-10 text-red-600" />
+                                </div>
+                                <h3 className="text-xl font-bold text-[#412E27] mb-2">Gagal!</h3>
+                                <p className="text-[#6B5D52] mb-6">{alertMessage}</p>
+                                <button
+                                    onClick={() => setShowErrorAlert(false)}
+                                    className="w-full bg-[#7A2B1E] text-white py-3 rounded-lg font-medium hover:bg-[#561E15] transition-colors"
+                                >
+                                    OK
                                 </button>
                             </div>
                         </div>

@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\RoomController;
+use Illuminate\Support\Facades\Storage;
 
 class TenantController extends Controller
 {
@@ -23,7 +24,7 @@ class TenantController extends Controller
                 'phone' => $tenant->kontak,
                 'roomNumber' => $tenant->room ? $tenant->room->nomor_kamar : '-',
                 'status' => $this->mapPaymentStatus($tenant),
-                'photo' => '/teraZ/testi1.png', // Default photo, can be customized
+                'photo' => $tenant->profile_photo ? asset('storage/' . $tenant->profile_photo) : asset('teraZ/testi1.png'),
                 'start_date' => $tenant->tanggal_mulai?->format('Y-m-d'),
                 'end_date' => $tenant->tanggal_selesai?->format('Y-m-d'),
                 'tenant_status' => $tenant->status,
@@ -143,6 +144,30 @@ class TenantController extends Controller
         }
 
         return redirect()->back()->with('success', 'Tenant removed successfully.');
+    }
+
+    public function updatePhoto(Request $request, $id)
+    {
+        $tenant = Tenant::findOrFail($id);
+
+        $request->validate([
+            'profile_photo' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        // Hapus foto lama jika ada
+        if ($tenant->profile_photo && Storage::disk('public')->exists($tenant->profile_photo)) {
+            Storage::disk('public')->delete($tenant->profile_photo);
+        }
+
+        // Simpan foto baru
+        $file = $request->file('profile_photo');
+        $filename = 'tenant_' . $tenant->id . '_' . time() . '.' . $file->extension();
+        $path = $file->storeAs('profile_photos', $filename, 'public');
+
+        // Update path foto di database
+        $tenant->update(['profile_photo' => $path]);
+
+        return back()->with('success', 'Foto profil tenant berhasil diperbarui.');
     }
 
     // Helper function to map payment status

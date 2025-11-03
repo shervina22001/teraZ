@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head } from '@inertiajs/react';
 import LayoutAdmin from '@/components/teraZ/admin/LayoutAdmin';
-import { BedDouble, Users, TriangleAlert, NotebookText, Wallet, ChartNoAxesCombined } from 'lucide-react';
+import { BedDouble, Users, TriangleAlert, NotebookText, Wallet, ChartNoAxesCombined, TrendingUp, DollarSign, Wrench, BarChart3, AlertCircle, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface DashboardAdminProps {
@@ -70,6 +70,255 @@ interface RecentMaintenance {
     priority: string;
     biaya: number | null;
 }
+
+// Price Recommendation Component
+const PriceRecommendation: React.FC<{
+    stats: DashboardAdminProps['stats'];
+    chart_data: ChartDataPoint[];
+    recent_maintenance: RecentMaintenance[];
+}> = ({ stats, chart_data, recent_maintenance }) => {
+    const [showDetails, setShowDetails] = useState(false);
+
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0,
+        }).format(amount);
+    };
+
+    // Hitung rata-rata biaya maintenance per bulan
+    const totalMaintenanceCost = recent_maintenance
+        .filter(m => m.biaya && m.biaya > 0)
+        .reduce((sum, m) => sum + (m.biaya || 0), 0);
+    const avgMonthlyMaintenance = totalMaintenanceCost / 6; // dibagi 6 bulan
+
+    // Hitung profit margin bulanan (lebih akurat dari total)
+    const monthlyProfitMargin = stats.finance.monthly_income > 0
+        ? ((stats.finance.monthly_profit / stats.finance.monthly_income) * 100)
+        : 0;
+
+    // Target profit margin (25-30% adalah standar industri kos)
+    const targetProfitMargin = 25;
+
+    // Hitung tren pengeluaran (3 bulan terakhir vs 3 bulan pertama)
+    const last3Months = chart_data.slice(-3);
+    const first3Months = chart_data.slice(0, 3);
+    const avgOutcomeLast3 = last3Months.reduce((sum, d) => sum + d.outcome, 0) / 3;
+    const avgOutcomeFirst3 = first3Months.reduce((sum, d) => sum + d.outcome, 0) / 3;
+    const outcomeTrend = avgOutcomeFirst3 > 0
+        ? ((avgOutcomeLast3 - avgOutcomeFirst3) / avgOutcomeFirst3 * 100)
+        : 0;
+
+    // Hitung rasio maintenance terhadap pendapatan
+    const maintenanceRatio = stats.finance.monthly_income > 0
+        ? (avgMonthlyMaintenance / stats.finance.monthly_income) * 100
+        : 0;
+
+    // Tingkat okupansi
+    const occupancyRate = stats.rooms.total > 0
+        ? (stats.rooms.occupied / stats.rooms.total) * 100
+        : 0;
+
+    // Logika rekomendasi yang lebih masuk akal
+    let recommendedIncrease = 0;
+    let reason = '';
+    let urgency: 'low' | 'medium' | 'high' = 'low';
+
+    // Prioritas 1: Profit margin sangat rendah atau negatif
+    if (monthlyProfitMargin < 10) {
+        recommendedIncrease = 15;
+        reason = 'Profit margin sangat rendah (<10%), bisnis tidak sustainable';
+        urgency = 'high';
+    }
+    // Prioritas 2: Profit margin rendah
+    else if (monthlyProfitMargin < 15) {
+        recommendedIncrease = 12;
+        reason = 'Profit margin rendah (10-15%), di bawah standar industri';
+        urgency = 'high';
+    }
+    // Prioritas 3: Profit margin cukup tapi di bawah target
+    else if (monthlyProfitMargin < 20) {
+        recommendedIncrease = 8;
+        reason = 'Profit margin cukup (15-20%), namun bisa dioptimalkan';
+        urgency = 'medium';
+    }
+    // Prioritas 4: Biaya maintenance tinggi
+    else if (maintenanceRatio > 20) {
+        recommendedIncrease = 10;
+        reason = `Biaya maintenance tinggi (${maintenanceRatio.toFixed(1)}% dari pendapatan)`;
+        urgency = 'high';
+    }
+    else if (maintenanceRatio > 15) {
+        recommendedIncrease = 7;
+        reason = `Biaya maintenance cukup tinggi (${maintenanceRatio.toFixed(1)}% dari pendapatan)`;
+        urgency = 'medium';
+    }
+    // Prioritas 5: Tren pengeluaran naik signifikan
+    else if (outcomeTrend > 15) {
+        recommendedIncrease = 8;
+        reason = `Pengeluaran naik ${outcomeTrend.toFixed(1)}% dalam 6 bulan terakhir`;
+        urgency = 'medium';
+    }
+    else if (outcomeTrend > 10) {
+        recommendedIncrease = 6;
+        reason = `Pengeluaran meningkat ${outcomeTrend.toFixed(1)}% dalam 6 bulan terakhir`;
+        urgency = 'low';
+    }
+    // Prioritas 6: Profit margin baik tapi belum optimal
+    else if (monthlyProfitMargin < targetProfitMargin) {
+        recommendedIncrease = 5;
+        reason = `Optimalisasi profit margin dari ${monthlyProfitMargin.toFixed(1)}% ke target ${targetProfitMargin}%`;
+        urgency = 'low';
+    }
+    // Kondisi baik: hanya penyesuaian inflasi
+    else {
+        recommendedIncrease = 3;
+        reason = 'Penyesuaian inflasi tahunan (kondisi finansial baik)';
+        urgency = 'low';
+    }
+
+    // Sesuaikan rekomendasi berdasarkan tingkat okupansi
+    // Jika okupansi rendah, kurangi rekomendasi kenaikan
+    if (occupancyRate < 60 && recommendedIncrease > 5) {
+        recommendedIncrease = Math.max(3, recommendedIncrease - 3);
+        reason += ` (disesuaikan karena okupansi ${occupancyRate.toFixed(0)}%)`;
+        if (urgency === 'high') urgency = 'medium';
+    }
+
+    // Simulasi harga baru per kamar
+    const avgCurrentPrice = stats.rooms.occupied > 0
+        ? stats.finance.monthly_income / stats.rooms.occupied
+        : 0;
+    const recommendedNewPrice = avgCurrentPrice * (1 + recommendedIncrease / 100);
+    const additionalMonthlyIncome = (recommendedNewPrice - avgCurrentPrice) * stats.rooms.occupied;
+    const additionalYearlyIncome = additionalMonthlyIncome * 12;
+
+    const getUrgencyBadge = () => {
+        switch (urgency) {
+            case 'high': return { text: 'Sangat Disarankan', color: 'bg-[#8B2E1F]' };
+            case 'medium': return { text: 'Disarankan', color: 'bg-[#A75B3E]' };
+            default: return { text: 'Pertimbangkan', color: 'bg-[#265578]' };
+        }
+    };
+
+    return (
+        <div className="bg-[#F5F2EE] rounded-lg shadow-md p-6 mb-8">
+            <div className="flex items-start justify-between mb-6">
+                <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="bg-[#6B5D52] p-2 rounded-lg">
+                            <TrendingUp className="w-6 h-6 text-[#F5F2EE]" />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-[#412E27]">Rekomendasi Kenaikan Harga</h2>
+                            <span className={`inline-block px-4 py-1 ${getUrgencyBadge().color} text-white rounded-lg text-xs font-semibold mt-1`}>
+                                {getUrgencyBadge().text}
+                            </span>
+                        </div>
+                    </div>
+                    <p className="text-[#6B5D52] text-base">{reason}</p>
+                </div>
+
+                <button
+                    onClick={() => setShowDetails(!showDetails)}
+                    className="bg-[#6B5D52] hover:bg-[#4d3e33] text-white p-2 rounded-lg transition-colors"
+                >
+                    {showDetails ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-6 mb-6">
+                <div className="bg-white rounded-lg p-5 border border-gray-200 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                        <BarChart3 className="w-5 h-5 text-[#6B5D52]" />
+                        <p className="text-sm text-[#6B5D52]">Kenaikan Disarankan</p>
+                    </div>
+                    <p className="text-4xl font-bold text-[#412E27]">{recommendedIncrease}%</p>
+                    <p className="text-sm text-[#6B5D52] mt-2">
+                        ~{formatCurrency(avgCurrentPrice * recommendedIncrease / 100)}/kamar
+                    </p>
+                </div>
+
+                <div className="bg-white rounded-lg p-5 border border-gray-200 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                        <DollarSign className="w-5 h-5 text-[#6B5D52]" />
+                        <p className="text-sm text-[#6B5D52]">Profit Margin Bulanan</p>
+                    </div>
+                    <p className="text-4xl font-bold text-[#412E27]">{monthlyProfitMargin.toFixed(1)}%</p>
+                    <p className="text-sm text-[#6B5D52] mt-2">
+                        Target: {targetProfitMargin}%
+                    </p>
+                </div>
+
+                <div className="bg-white rounded-lg p-5 border border-gray-200 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Wrench className="w-5 h-5 text-[#6B5D52]" />
+                        <p className="text-sm text-[#6B5D52]">Biaya Maintenance/Bulan</p>
+                    </div>
+                    <p className="text-2xl font-bold text-[#412E27]">{formatCurrency(avgMonthlyMaintenance)}</p>
+                    <p className="text-sm text-[#6B5D52] mt-2">
+                        {maintenanceRatio.toFixed(1)}% dari pendapatan
+                    </p>
+                </div>
+            </div>
+
+            {showDetails && (
+                <div className="mt-4">
+                    <h3 className="font-semibold text-lg flex items-center gap-2 mb-3 text-[#412E27]">
+                        <Info className="w-5 h-5" />
+                        Detail Analisis
+                    </h3>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+                            <p className="text-sm text-[#6B5D52] mb-1">Harga Rata-rata Saat Ini</p>
+                            <p className="text-xl font-bold text-[#412E27]">{formatCurrency(avgCurrentPrice)}</p>
+                        </div>
+                        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+                            <p className="text-sm text-[#6B5D52] mb-1">Harga Disarankan</p>
+                            <p className="text-xl font-bold text-[#412E27]">{formatCurrency(recommendedNewPrice)}</p>
+                        </div>
+                        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+                            <p className="text-sm text-[#6B5D52] mb-1">Tambahan Pendapatan/Bulan</p>
+                            <p className="text-xl font-bold text-[#2FA336]">+{formatCurrency(additionalMonthlyIncome)}</p>
+                        </div>
+                        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+                            <p className="text-sm text-[#6B5D52] mb-1">Tambahan Pendapatan/Tahun</p>
+                            <p className="text-xl font-bold text-[#2FA336]">+{formatCurrency(additionalYearlyIncome)}</p>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+                        <h4 className="font-semibold mb-3 text-[#412E27]">Faktor Pertimbangan:</h4>
+                        <ul className="space-y-2 text-sm text-[#6B5D52]">
+                            <li className="flex items-start gap-2">
+                                <span className="text-[#2FA336]">✓</span>
+                                <span>Profit Margin Bulanan: {monthlyProfitMargin.toFixed(1)}% (Target: {targetProfitMargin}%)</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <span className="text-[#2FA336]">✓</span>
+                                <span>Biaya Maintenance: {formatCurrency(avgMonthlyMaintenance)}/bulan ({maintenanceRatio.toFixed(1)}% dari pendapatan)</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <span className="text-[#2FA336]">✓</span>
+                                <span>Tren Pengeluaran: {outcomeTrend > 0 ? '↑' : '↓'} {Math.abs(outcomeTrend).toFixed(1)}% (6 bulan terakhir)</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <span className="text-[#2FA336]">✓</span>
+                                <span>Tingkat Okupansi: {occupancyRate.toFixed(0)}% ({stats.rooms.occupied}/{stats.rooms.total} kamar terisi)</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <span className="text-[#2FA336]">✓</span>
+                                <span>Laporan Maintenance Pending: {stats.maintenance.pending} masalah</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 
 const DashboardAdminPage: React.FC<DashboardAdminProps> = ({ user, stats, chart_data, recent_payments, recent_maintenance }) => {
     const getPaymentStatusColor = (color: string) => {
@@ -297,6 +546,13 @@ const DashboardAdminPage: React.FC<DashboardAdminProps> = ({ user, stats, chart_
                         </LineChart>
                     </ResponsiveContainer>
                 </div>
+
+                {/* Price Recommendation Component - DI BAWAH CHART */}
+                <PriceRecommendation
+                    stats={stats}
+                    chart_data={chart_data}
+                    recent_maintenance={recent_maintenance}
+                />
 
                 {/* Bottom Section */}
                 <div className="grid grid-cols-2 gap-8">

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Head, router } from '@inertiajs/react';
 import Layout from '@/components/teraZ/user/LayoutUser';
-import { Calendar, CheckCircle, Clock, AlertTriangle, X, CreditCard, Upload, FileUp, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, CheckCircle, Clock, AlertTriangle, X, CreditCard, Upload, FileUp, Image, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface User {
   id: number;
@@ -58,25 +58,64 @@ const PembayaranPage: React.FC<PembayaranPageProps> = ({ user, payments, stats }
   const [showErrorAlert, setShowErrorAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
 
-  // Filter & Pagination states
-  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'paid' | 'confirmed'>('all');
+  // Filter & Sort states
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [sortOrder, setSortOrder] = useState<string>('desc');
+  
+  // Pagination states
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 5;
 
-  // Sort payments (newest first) and filter
-  const filteredPayments = useMemo(() => {
-    let filtered = [...payments].sort((a, b) => b.id - a.id);
-    
-    if (filterStatus === 'pending') {
-      filtered = filtered.filter(p => p.status === 'pending' || p.status === 'rejected');
-    } else if (filterStatus === 'paid') {
-      filtered = filtered.filter(p => p.status === 'paid');
-    } else if (filterStatus === 'confirmed') {
-      filtered = filtered.filter(p => p.status === 'confirmed');
+  const months = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+  ];
+
+  // Sort and filter payments
+  const getFilteredAndSortedPayments = () => {
+    let filtered = [...payments];
+
+    // Filter by status
+    if (filterStatus !== 'all') {
+      if (filterStatus === 'pending') {
+        filtered = filtered.filter(p => p.status === 'pending' || p.status === 'rejected');
+      } else {
+        filtered = filtered.filter(p => p.status === filterStatus);
+      }
     }
-    
+
+    // Sort by period (newest first or oldest first)
+    filtered.sort((a, b) => {
+      const parseDate = (periodStr: string) => {
+        const parts = periodStr.split(' ');
+        const monthName = parts[0];
+        const year = parseInt(parts[1]);
+        const monthIndex = months.indexOf(monthName);
+        return { year, month: monthIndex + 1 };
+      };
+
+      const dateA = parseDate(a.period);
+      const dateB = parseDate(b.period);
+
+      if (sortOrder === 'desc') {
+        // Newest first
+        if (dateB.year !== dateA.year) {
+          return dateB.year - dateA.year;
+        }
+        return dateB.month - dateA.month;
+      } else {
+        // Oldest first
+        if (dateA.year !== dateB.year) {
+          return dateA.year - dateB.year;
+        }
+        return dateA.month - dateB.month;
+      }
+    });
+
     return filtered;
-  }, [payments, filterStatus]);
+  };
+
+  const filteredPayments = useMemo(() => getFilteredAndSortedPayments(), [payments, filterStatus, sortOrder]);
 
   const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
 
@@ -102,9 +141,22 @@ const PembayaranPage: React.FC<PembayaranPageProps> = ({ user, payments, stats }
     setCurrentPage(pageIndex);
   };
 
-  const handleFilterChange = (filter: 'all' | 'pending' | 'paid' | 'confirmed') => {
+  const handleFilterChange = (filter: string) => {
     setFilterStatus(filter);
     setCurrentPage(0);
+  };
+
+  const toggleSort = () => {
+    setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
+    setCurrentPage(0);
+  };
+
+  const renderSortIcon = () => {
+    if (sortOrder === 'desc') {
+      return <ArrowDown className="w-4 h-4" />;
+    } else {
+      return <ArrowUp className="w-4 h-4" />;
+    }
   };
 
   const getStatusBadgeColor = (statusColor: string) => {
@@ -247,56 +299,41 @@ const PembayaranPage: React.FC<PembayaranPageProps> = ({ user, payments, stats }
             <h2 className="text-2xl font-semibold text-[#412E27]">
               Riwayat Pembayaran
             </h2>
-            {filteredPayments.length > 0 && (
-              <p className="text-sm text-[#6B5D52]">
-                Menampilkan {currentPage * itemsPerPage + 1}-{Math.min((currentPage + 1) * itemsPerPage, filteredPayments.length)} dari {filteredPayments.length} pembayaran
-              </p>
-            )}
+            
+            {/* Filter & Sort Controls */}
+            <div className="flex gap-3">
+              {/* Sort Button */}
+              <button
+                onClick={toggleSort}
+                className="px-4 py-2 bg-white text-[#7A2B1E] rounded-lg shadow-md focus:outline-none text-sm font-medium cursor-pointer hover:bg-gray-50 transition-colors flex items-center gap-2"
+                title={sortOrder === 'desc' ? 'Urutkan: Terbaru ke Terlama' : 'Urutkan: Terlama ke Terbaru'}
+              >
+                {renderSortIcon()}
+                <span className="hidden md:inline">
+                  {sortOrder === 'desc' ? 'Terbaru ↓' : 'Terlama ↑'}
+                </span>
+              </button>
+
+              {/* Status Filter */}
+              <select
+                value={filterStatus}
+                onChange={(e) => handleFilterChange(e.target.value)}
+                className="px-4 py-2 bg-white text-[#7A2B1E] rounded-lg shadow-md focus:outline-none text-sm font-medium cursor-pointer"
+              >
+                <option value="all">Semua Status</option>
+                <option value="pending">Belum Bayar</option>
+                <option value="paid">Menunggu Konfirmasi</option>
+                <option value="confirmed">Lunas</option>
+              </select>
+            </div>
           </div>
 
-          {/* Filter Tabs */}
-          <div className="flex gap-3 mb-6">
-            <button
-              onClick={() => handleFilterChange('all')}
-              className={`px-5 py-2 rounded-lg font-medium transition-colors ${
-                filterStatus === 'all'
-                  ? 'bg-[#7A2B1E] text-white'
-                  : 'bg-white text-[#412E27] hover:bg-gray-100'
-              }`}
-            >
-              Semua ({payments.length})
-            </button>
-            <button
-              onClick={() => handleFilterChange('pending')}
-              className={`px-5 py-2 rounded-lg font-medium transition-colors ${
-                filterStatus === 'pending'
-                  ? 'bg-[#D97236] text-white'
-                  : 'bg-white text-[#412E27] hover:bg-gray-100'
-              }`}
-            >
-              Belum Bayar ({stats.pending})
-            </button>
-            <button
-              onClick={() => handleFilterChange('paid')}
-              className={`px-5 py-2 rounded-lg font-medium transition-colors ${
-                filterStatus === 'paid'
-                  ? 'bg-[#2E5A8B] text-white'
-                  : 'bg-white text-[#412E27] hover:bg-gray-100'
-              }`}
-            >
-              Proses ({stats.waiting_approval})
-            </button>
-            <button
-              onClick={() => handleFilterChange('confirmed')}
-              className={`px-5 py-2 rounded-lg font-medium transition-colors ${
-                filterStatus === 'confirmed'
-                  ? 'bg-[#2E6B4A] text-white'
-                  : 'bg-white text-[#412E27] hover:bg-gray-100'
-              }`}
-            >
-              Lunas ({stats.confirmed})
-            </button>
-          </div>
+          {/* Report Count Info */}
+          {filteredPayments.length > 0 && (
+            <p className="text-sm text-[#6B5D52] mb-4">
+              Menampilkan {currentPage * itemsPerPage + 1}-{Math.min((currentPage + 1) * itemsPerPage, filteredPayments.length)} dari {filteredPayments.length} pembayaran
+            </p>
+          )}
 
           <div className="space-y-4 min-h-[400px]">
             {filteredPayments.length === 0 ? (
@@ -304,7 +341,7 @@ const PembayaranPage: React.FC<PembayaranPageProps> = ({ user, payments, stats }
                 <p className="text-gray-500">
                   {filterStatus === 'all' 
                     ? 'Belum ada tagihan pembayaran'
-                    : `Tidak ada pembayaran dengan status ${filterStatus === 'pending' ? 'belum bayar' : filterStatus === 'paid' ? 'proses' : 'lunas'}`
+                    : 'Tidak ada pembayaran yang sesuai dengan filter'
                   }
                 </p>
               </div>
@@ -523,7 +560,7 @@ const PembayaranPage: React.FC<PembayaranPageProps> = ({ user, payments, stats }
                       <X className="w-4 h-4" />
                     </button>
                     <div className="mt-2 flex items-center gap-2 text-sm text-green-600">
-                      <ImageIcon className="w-4 h-4" />
+                      <Image className="w-4 h-4" />
                       <span>{referenceFile?.name}</span>
                     </div>
                   </div>
