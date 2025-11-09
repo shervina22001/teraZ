@@ -100,7 +100,7 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({
         status: statusPenghuni,
       },
       {
-        preserveState: true,      // biar modal sukses tetap kebuka sampai kita reload manual
+        preserveState: true,
         preserveScroll: true,
         onSuccess: () => {
           setShowEditModal(false);
@@ -245,7 +245,12 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({
             <div className="flex items-center gap-6 flex-1">
               {/* Photo */}
               <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                <img src={penghuni.photo} alt={penghuni.name} className="w-full h-full object-cover" />
+                <img
+                  src={penghuni.photo}
+                  alt={penghuni.name}
+                  className="w-full h-full object-cover"
+                  key={penghuni.id} // Force re-render when data changes
+                />
               </div>
 
               {/* Grid 4 kolom */}

@@ -14,6 +14,7 @@ interface User {
 interface Tenant {
     id: number;
     profile_photo: string; // Full URL dari backend dengan asset()
+    updated_at?: string; // Tambahkan untuk cache busting
 }
 
 interface Room {
@@ -49,8 +50,8 @@ const Profile: React.FC<Props> = ({ user, tenant, room, contract }) => {
     const [showErrorAlert, setShowErrorAlert] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
 
-    // Add timestamp to force image refresh
-    const [imageTimestamp, setImageTimestamp] = useState(Date.now());
+    // State untuk force refresh gambar
+    const [imageKey, setImageKey] = useState(Date.now());
 
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('id-ID', {
@@ -68,13 +69,14 @@ const Profile: React.FC<Props> = ({ user, tenant, room, contract }) => {
         });
     };
 
-    // Get profile photo URL - backend sudah kirim full URL
+    // FIXED: getProfilePhotoUrl dengan cache busting yang lebih reliable
     const getProfilePhotoUrl = () => {
         if (tenant.profile_photo) {
-            // Backend sudah kirim full URL dengan asset(), jadi langsung pakai
-            return `${tenant.profile_photo}?t=${imageTimestamp}`;
+            // Gunakan updated_at dari server jika tersedia, fallback ke imageKey
+            const timestamp = tenant.updated_at ? new Date(tenant.updated_at).getTime() : imageKey;
+            return `${tenant.profile_photo}?v=${timestamp}`;
         }
-        return '/teraZ/testi1.png'; // Default sesuai backend
+        return '/teraZ/testi1.png'; // Default fallback
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,20 +125,28 @@ const Profile: React.FC<Props> = ({ user, tenant, room, contract }) => {
             forceFormData: true,
             preserveScroll: true,
             onSuccess: () => {
+                // Reset modal state
                 setShowPhotoModal(false);
                 setSelectedFile(null);
                 setPreviewUrl('');
                 setIsUploading(false);
                 
-                // Update timestamp to force image refresh
-                setImageTimestamp(Date.now());
+                // Force refresh gambar dengan update timestamp
+                setImageKey(Date.now());
                 
+                // Show success message
                 setAlertMessage('Foto profil berhasil diperbarui!');
                 setShowSuccessAlert(true);
                 
-                // Reload tenant data
+                // Reload data tenant dari server
                 setTimeout(() => {
-                    router.reload({ only: ['tenant'] });
+                    router.reload({ 
+                        only: ['tenant'],
+                        onSuccess: () => {
+                            // Update imageKey lagi setelah reload untuk memastikan cache di-refresh
+                            setImageKey(Date.now());
+                        }
+                    });
                 }, 500);
             },
             onError: (errors) => {
@@ -163,7 +173,7 @@ const Profile: React.FC<Props> = ({ user, tenant, room, contract }) => {
                 <h1 className="text-3xl font-semibold text-[#7A2B1E] mt-8 mb-8">Profil Penyewa</h1>
 
                 {/* Top Section - Informasi Pribadi & Informasi Kamar */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-18 mb-14">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-14">
                     {/* Informasi Pribadi */}
                     <div className="bg-[#D1D8BD] rounded-xl p-8 shadow-lg">
                         <h2 className="text-2xl font-semibold text-[#412E27] mb-6">
@@ -173,6 +183,7 @@ const Profile: React.FC<Props> = ({ user, tenant, room, contract }) => {
                         <div className="flex items-start gap-4 mb-6">
                             <div className="relative">
                                 <img
+                                    key={imageKey} // Force re-render saat imageKey berubah
                                     src={getProfilePhotoUrl()}
                                     alt={user.name}
                                     className="w-20 h-20 rounded-full object-cover border-3 border-[#412E27]"

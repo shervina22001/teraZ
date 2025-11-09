@@ -46,9 +46,9 @@ class UserController extends Controller
             'note'            => $tenant->catatan,
         ];
 
-        // Foto profil
+        // Foto profil dengan cache busting
         $profilePhoto = $tenant->profile_photo
-            ? asset('storage/' . $tenant->profile_photo)
+            ? asset('storage/' . $tenant->profile_photo) . '?v=' . strtotime($tenant->updated_at)
             : asset('teraZ/testi1.png');
 
         return Inertia::render('user/ProfilePage', [
@@ -141,10 +141,10 @@ class UserController extends Controller
             ->latest('id')
             ->first();
 
-        // Get profile photo URL
+        // Get profile photo URL dengan cache busting
         $profilePhoto = asset('teraZ/testi1.png'); // Default
         if ($tenant && $tenant->profile_photo) {
-            $profilePhoto = asset('storage/' . $tenant->profile_photo);
+            $profilePhoto = asset('storage/' . $tenant->profile_photo) . '?v=' . strtotime($tenant->updated_at);
         }
 
         return response()->json([

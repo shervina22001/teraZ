@@ -28,6 +28,19 @@ Route::middleware('guest')->group(function () {
 // Logout (requires auth)
 Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
 
+// Storage route with no-cache headers for profile photos
+Route::get('/storage/{path}', function ($path) {
+    $path = storage_path('app/public/' . $path);
+    if (!file_exists($path)) {
+        abort(404);
+    }
+    return response()->file($path, [
+        'Cache-Control' => 'no-cache, no-store, must-revalidate',
+        'Pragma' => 'no-cache',
+        'Expires' => '0'
+    ]);
+})->where('path', '.*')->name('storage');
+
 // =============================
 // User Area (login required, role: tenant)
 // =============================
