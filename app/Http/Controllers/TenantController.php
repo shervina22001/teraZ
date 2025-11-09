@@ -10,7 +10,6 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\RoomController;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Auth;
 
 class TenantController extends Controller
 {
@@ -117,8 +116,10 @@ class TenantController extends Controller
         ]);
 
         // Update user email if username provided
-        if ($tenant->user && isset($validated['username'])) {
-            $tenant->user->update(['email' => $validated['username']]);
+        if ($tenant->user) {
+            $tenant->user->update([
+                'name' => $validated['name'], // Also use unique name!
+            ]);
         }
 
         return redirect()->back()->with('success', 'Tenant updated successfully.');
