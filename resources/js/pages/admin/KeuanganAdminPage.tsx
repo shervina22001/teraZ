@@ -562,47 +562,22 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
                   </div>
 
                   {/* Right: Actions */}
-                  <div className="flex-shrink-0 flex flex-col gap-2">
+                  <div className="flex-shrink-0 flex flex-col gap-2 w-36">
                     <button
                       onClick={() => handleViewDetail(payment)}
-                      className="bg-[#4e5f7d] text-white px-4 py-2 rounded-lg hover:bg-[#3d4c65] transition-colors flex items-center gap-2"
+                      className="bg-[#4e5f7d] text-white px-4 py-2 rounded-lg hover:bg-[#3d4c65] transition-colors flex items-center gap-2 justify-center"
                     >
                       <Eye className="w-4 h-4" />
                       Detail
                     </button>
 
-                    {payment.status === 'paid' && (
-                      <>
-                        <button
-                          onClick={() => {
-                            setSelectedPayment(payment);
-                            setShowApproveModal(true);
-                          }}
-                          className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
-                        >
-                          Setujui
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedPayment(payment);
-                            setShowRejectModal(true);
-                          }}
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
-                        >
-                          Tolak
-                        </button>
-                      </>
-                    )}
-
-                    {(payment.status === 'pending' || payment.status === 'rejected') && (
-                        <button
-                          onClick={() => handleDelete(payment.id)}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          <span className="font-medium">Hapus</span>
-                        </button>
-                    )}
+                    <button
+                      onClick={() => handleDelete(payment.id)}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors justify-center"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span className="font-medium">Hapus</span>
+                    </button>
                   </div>
                 </div>
               </div>

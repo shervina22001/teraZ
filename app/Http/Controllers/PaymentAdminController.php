@@ -8,6 +8,9 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 class PaymentAdminController extends Controller
@@ -162,18 +165,36 @@ class PaymentAdminController extends Controller
      */
     public function destroy(Payment $payment)
     {
-        // Only allow deleting pending or rejected payments
-        if (!in_array($payment->status, ['pending', 'rejected'])) {
-            return back()->with('error', 'Tidak dapat menghapus pembayaran yang sudah dikonfirmasi.');
-        }
+        try {
+            DB::beginTransaction();
 
-        // Delete payment proof image if exists
-        if ($payment->reference && Storage::disk('public')->exists($payment->reference)) {
-            Storage::disk('public')->delete($payment->reference);
-        }
+            // Hapus file bukti kalau ada (normalisasi path jika yang tersimpan adalah URL atau `/storage/...`)
+            if ($payment->reference) {
+                // Ambil path relatif di disk 'public'
+                $path = Str::of($payment->reference)
+                    ->after('storage/')    // dari 'storage/payments/...' jadi 'payments/...'
+                    ->ltrim('/');          // rapikan leading slash
 
-        $payment->delete();
-        return back()->with('success', 'Tagihan pembayaran berhasil dihapus.');
+                if ($path->isNotEmpty() && Storage::disk('public')->exists($path)) {
+                    Storage::disk('public')->delete($path);
+                }
+            }
+
+            // Jika pakai SoftDeletes dan kamu mau hapus permanen, gunakan forceDelete.
+            // Kalau tidak, cukup $payment->delete();
+            if (in_array('Illuminate\\Database\\Eloquent\\SoftDeletes', class_uses($payment))) {
+                $payment->forceDelete(); // hapus permanen
+            } else {
+                $payment->delete();
+            }
+
+            DB::commit();
+            return back()->with('success', 'Tagihan pembayaran berhasil dihapus.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Gagal hapus payment', ['id' => $payment->id, 'error' => $e->getMessage()]);
+            return back()->with('error', 'Gagal menghapus pembayaran.');
+        }
     }
 
     /**
@@ -215,7 +236,7 @@ class PaymentAdminController extends Controller
                 'tenant_id' => $tenant->id,
                 'payment_type' => 'rent',
                 'amount' => $tenant->room->harga ?? 0,
-                'due_date' => Carbon::create($year, $month, 10), // Due on 10th of the month
+                'due_date' => Carbon::create($year, $month, 26), // Due on 10th of the month
                 'period_month' => $month,
                 'period_year' => $year,
                 'status' => 'pending',

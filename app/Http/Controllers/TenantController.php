@@ -39,6 +39,16 @@ class TenantController extends Controller
             'tenants' => $tenants,
             'availableRooms' => $rooms,
         ]);
+
+        return Inertia::render('user/Profile', [
+            'user'    => $user,
+            'tenant'  => [
+                'id'            => $tenant->id,
+                'profile_photo' => $tenant->profile_photo_full, // <- PERHATIKAN INI
+                'updated_at'    => $tenant->updated_at,
+            ],
+            // room, contract, dst...
+        ]);
     }
 
     // Create new tenant
@@ -159,7 +169,7 @@ class TenantController extends Controller
      * FIXED: Update foto profil untuk tenant yang sedang login
      * Route: POST /profile/update-photo
      */
-    public function updatePhoto(Request $request)
+    public function updateProfilePhoto(Request $request)
     {
         // Validasi file
         $request->validate([

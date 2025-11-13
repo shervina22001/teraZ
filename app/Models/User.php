@@ -18,7 +18,18 @@ class User extends Authenticatable
         'phone',
         'role',
         'password',
+        'profile'
     ];
+
+    protected $appends = ['profile_url'];
+
+    public function getProfileUrlAttribute()
+    {
+        if ($this->profile && Storage::disk('public')->exists($this->profile)) {
+            return asset('storage/' . $this->profile);
+        }
+        return asset('images/default-user.png');
+    }
 
     protected $hidden = [
         'password',

@@ -72,6 +72,7 @@ interface RecentMaintenance {
 }
 
 // Price Recommendation Component
+
 const PriceRecommendation: React.FC<{
     stats: DashboardAdminProps['stats'];
     chart_data: ChartDataPoint[];
@@ -87,6 +88,25 @@ const PriceRecommendation: React.FC<{
         }).format(amount);
     };
 
+    // === ambil sampel 6 bulan terakhir yang ada datanya ===
+    const last6WithData = chart_data
+    .filter(d => (d.income ?? 0) > 0 || (d.outcome ?? 0) > 0)
+    .slice(-6);
+
+    // fallback: minimal pakai 3 bulan terakhir (kalau data tipis)
+    const sample =
+    last6WithData.length >= 3 ? last6WithData :
+    (chart_data.slice(-3).length ? chart_data.slice(-3) : chart_data);
+
+    // rata-rata income & profit berdasarkan sample
+    const avgIncomeFromChart = sample.length
+    ? sample.reduce((s, d) => s + (d.income ?? 0), 0) / sample.length
+    : stats.finance.monthly_income;
+
+    const avgProfitFromChart = sample.length
+    ? sample.reduce((s, d) => s + (d.profit ?? 0), 0) / sample.length
+    : stats.finance.monthly_profit;
+
     // Hitung rata-rata biaya maintenance per bulan
     const totalMaintenanceCost = recent_maintenance
         .filter(m => m.biaya && m.biaya > 0)
@@ -94,8 +114,8 @@ const PriceRecommendation: React.FC<{
     const avgMonthlyMaintenance = totalMaintenanceCost / 6; // dibagi 6 bulan
 
     // Hitung profit margin bulanan (lebih akurat dari total)
-    const monthlyProfitMargin = stats.finance.monthly_income > 0
-        ? ((stats.finance.monthly_profit / stats.finance.monthly_income) * 100)
+    const monthlyProfitMargin = avgIncomeFromChart > 0
+        ? (avgProfitFromChart / avgIncomeFromChart) * 100
         : 0;
 
     // Target profit margin (25-30% adalah standar industri kos)
@@ -111,8 +131,8 @@ const PriceRecommendation: React.FC<{
         : 0;
 
     // Hitung rasio maintenance terhadap pendapatan
-    const maintenanceRatio = stats.finance.monthly_income > 0
-        ? (avgMonthlyMaintenance / stats.finance.monthly_income) * 100
+    const maintenanceRatio = avgIncomeFromChart > 0
+        ? (avgMonthlyMaintenance / avgIncomeFromChart) * 100
         : 0;
 
     // Tingkat okupansi
@@ -188,7 +208,7 @@ const PriceRecommendation: React.FC<{
 
     // Simulasi harga baru per kamar
     const avgCurrentPrice = stats.rooms.occupied > 0
-        ? stats.finance.monthly_income / stats.rooms.occupied
+        ? avgIncomeFromChart / stats.rooms.occupied
         : 0;
     const recommendedNewPrice = avgCurrentPrice * (1 + recommendedIncrease / 100);
     const additionalMonthlyIncome = (recommendedNewPrice - avgCurrentPrice) * stats.rooms.occupied;

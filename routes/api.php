@@ -64,6 +64,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Kelola tenants
         Route::apiResource('tenants', TenantAdminController::class)->except(['create', 'edit']);
         Route::post('/tenants/{tenant}/checkout', [TenantAdminController::class, 'checkout']);
+        Route::post('/tenant/profile/photo', [TenantController::class, 'updateProfilePhoto']);
 
         // Lihat semua payments & maintenance (versi admin)
         Route::get('/payments', [PaymentController::class, 'adminIndex']);

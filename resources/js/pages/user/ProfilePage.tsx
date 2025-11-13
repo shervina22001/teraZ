@@ -98,6 +98,9 @@ const Profile: React.FC<Props> = ({ user, tenant, room, contract }) => {
                 return;
             }
 
+            const formData = new FormData();
+            formData.append("profile", file);
+
             setSelectedFile(file);
 
             // Create preview

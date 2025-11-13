@@ -19,12 +19,26 @@ class Tenant extends Model
         'tanggal_selesai',
         'status',
         'catatan',
+        'profile_photo',
     ];
 
     protected $casts = [
         'tanggal_mulai' => 'date',
         'tanggal_selesai' => 'date',
     ];
+
+    protected $appends = ['profile_photo_full'];
+
+    public function getProfilePhotoFullAttribute()
+    {
+        if ($this->profile_photo && Storage::disk('public')->exists($this->profile_photo)) {
+            // URL publik: http://APP_URL/storage/profile_photos/abc123.jpg
+            return asset('storage/' . $this->profile_photo);
+        }
+
+        // fallback kalau belum ada foto
+        return asset('teraZ/default-user.png'); // atau path default kamu
+    }
 
     public function user()
     {

@@ -23,7 +23,26 @@ class Payment extends Model
         'period_month',
         'period_year',
         'paid_at',
+        'payment_proof',
     ];
+
+    protected $appends = ['payment_proof_url'];
+
+    public function getPaymentProofUrlAttribute()
+    {
+        if (! $this->payment_proof) {
+            return null;
+        }
+
+        // DB hanya simpan nama file: "paymen_1727705_8_cvx.png"
+        $path = 'payment_proofs/' . $this->payment_proof;
+
+        if (Storage::disk('public')->exists($path)) {
+            return asset('storage/' . $path);
+        }
+
+        return null;
+    }
 
     protected $casts = [
         'amount' => 'decimal:2',
