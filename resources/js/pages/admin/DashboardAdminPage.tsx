@@ -213,6 +213,7 @@ const PriceRecommendation: React.FC<{
     const recommendedNewPrice = avgCurrentPrice * (1 + recommendedIncrease / 100);
     const additionalMonthlyIncome = (recommendedNewPrice - avgCurrentPrice) * stats.rooms.occupied;
     const additionalYearlyIncome = additionalMonthlyIncome * 12;
+    const priceIncrease = recommendedNewPrice - avgCurrentPrice;
 
     const getUrgencyBadge = () => {
         switch (urgency) {
@@ -290,14 +291,15 @@ const PriceRecommendation: React.FC<{
                         Detail Analisis
                     </h3>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-                            <p className="text-sm text-[#6B5D52] mb-1">Harga Rata-rata Saat Ini</p>
-                            <p className="text-xl font-bold text-[#412E27]">{formatCurrency(avgCurrentPrice)}</p>
-                        </div>
-                        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-                            <p className="text-sm text-[#6B5D52] mb-1">Harga Disarankan</p>
-                            <p className="text-xl font-bold text-[#412E27]">{formatCurrency(recommendedNewPrice)}</p>
+                            <p className="text-sm text-[#6B5D52] mb-1">Saran Kenaikan Harga</p>
+                            <p className="text-xl font-bold text-[#412E27]">
+                                +{formatCurrency(priceIncrease)}
+                            </p>
+                            <p className="text-xs text-[#6B5D52] mt-1">
+                                Selisih dari harga sekarang ke harga rekomendasi
+                            </p>
                         </div>
                         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
                             <p className="text-sm text-[#6B5D52] mb-1">Tambahan Pendapatan/Bulan</p>
