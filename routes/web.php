@@ -13,6 +13,7 @@ use App\Http\Controllers\TenantController;
 use App\Http\Controllers\MaintenanceAdminController;
 use App\Http\Controllers\DashboardAdminController;
 use App\Http\Controllers\MaintenanceController;
+use App\Http\Controllers\PengeluaranController;
 
 // Landing Page
 Route::get('/', fn () => Inertia::render('LandingPage'))->name('landing');
@@ -100,4 +101,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::post('/maintenance', [MaintenanceAdminController::class, 'store'])->name('maintenance.store');
     Route::patch('/maintenance/{maintenance}', [MaintenanceAdminController::class, 'update'])->name('maintenance.update');
     Route::delete('/maintenance/{maintenance}', [MaintenanceAdminController::class, 'destroy'])->name('maintenance.destroy');
+
+    // Pengeluaran Management
+    Route::get('/pengeluaran', [PengeluaranController::class, 'index'])->name('pengeluaran.index');
+    Route::post('/pengeluaran', [PengeluaranController::class, 'store'])->name('pengeluaran.store');
+    Route::patch('/pengeluaran/{id}', [PengeluaranController::class, 'update'])->name('pengeluaran.update');
+    Route::delete('/pengeluaran/{id}', [PengeluaranController::class, 'destroy'])->name('pengeluaran.destroy');
 });
