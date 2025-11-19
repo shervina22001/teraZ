@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
+//use  \Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\RoomController;
 use App\Http\Controllers\Api\PaymentController;
@@ -10,9 +11,11 @@ use App\Http\Controllers\Api\MaintenanceRequestController;
 use App\Http\Controllers\Api\Admin\AdminDashboardController;
 use App\Http\Controllers\Api\Admin\RoomAdminController;
 use App\Http\Controllers\Api\Admin\TenantAdminController;
-use App\Http\Controllers\Api\Admin\PaymentAdminController;
-use App\Http\Controllers\LoginController;
+// ✅ PAKAI controller API untuk route /api/admin/...
+use App\Http\Controllers\Api\Admin\PaymentAdminController as ApiPaymentAdminController;
 
+use App\Http\Controllers\LoginController;
+use App\Http\Controllers\TenantController;
 use App\Http\Controllers\UserController;
 
 /*
@@ -33,11 +36,8 @@ Route::post('/login', [AuthController::class, 'LoginPage']);
 Route::middleware('auth:sanctum')->group(function () {
 
     // Profil (JSON) & logout
-    // Pilih salah satu endpoint profil. Di sini kita pakai UserController@me
     // Route::get('/profile', [UserController::class, 'profile']);
     Route::post('/logout', [AuthController::class, 'logout']);
-
-
 
     // ---------- Tenant (role: tenant)
     Route::middleware('anyrole:tenant')->group(function () {
@@ -55,18 +55,22 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Dashboard & generate payments
         Route::get('/dashboard', [AdminDashboardController::class, 'index']);
-        Route::post('/payments/generate', [PaymentAdminController::class, 'generate']);
+
+        // ✅ Pakai controller API, method `generate` (bukan generateMonthlyPayments)
+        Route::post('/payments/generate', [ApiPaymentAdminController::class, 'generate']);
+
+        // ✅ Endpoint API untuk update status (pending/paid/confirmed/rejected)
+        Route::patch('/payments/{payment}/status', [ApiPaymentAdminController::class, 'updateStatus']);
 
         // Kelola rooms (admin-only)
-        Route::apiResource('rooms', RoomAdminController::class);
-        Route::apiResource('rooms', RoomAdminController::class);
+        Route::apiResource('rooms', RoomAdminController::class); // satu kali saja
 
         // Kelola tenants
         Route::apiResource('tenants', TenantAdminController::class)->except(['create', 'edit']);
         Route::post('/tenants/{tenant}/checkout', [TenantAdminController::class, 'checkout']);
         Route::post('/tenant/profile/photo', [TenantController::class, 'updateProfilePhoto']);
 
-        // Lihat semua payments & maintenance (versi admin)
+        // Lihat semua payments & maintenance (versi admin API /api/admin/...)
         Route::get('/payments', [PaymentController::class, 'adminIndex']);
         Route::get('/maintenances', [MaintenanceRequestController::class, 'adminIndex']);
 

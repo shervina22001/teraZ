@@ -34,7 +34,7 @@ class DashboardAdminController extends Controller
         // === Maintenance Statistics ===
         $pendingMaintenance = MaintenanceRequest::whereIn('status', ['pending', 'in_progress'])->count();
 
-        // === Finance Statistics ===
+        // === Income (Bulanan & Total) ===
         $monthlyIncome = Payment::where('status', 'confirmed')
             ->where('period_month', $currentMonth)
             ->where('period_year', $currentYear)
@@ -48,7 +48,7 @@ class DashboardAdminController extends Controller
         $totalIncome = Payment::where('status', 'confirmed')->sum('amount');
         $totalOutcome = MaintenanceRequest::where('status', 'done')->sum('biaya');
 
-        // === Derived Metrics ===
+        // === Derived Metrics (Profit) ===
         $monthlyProfit = $monthlyIncome - $monthlyOutcome;
         $totalProfit = $totalIncome - $totalOutcome;
 
@@ -84,6 +84,22 @@ class DashboardAdminController extends Controller
                 'status_color' => $this->mapMaintenanceStatusColor($m->status),
                 'priority' => $m->priority,
                 'biaya' => $m->biaya,
+            ]);
+
+            $reminderLogs = Payment::with(['tenant.room'])
+            ->whereNotNull('last_notified_at')
+            ->orderByDesc('last_notified_at')
+            ->get()
+            ->map(fn($p) => [
+                'id' => $p->id,
+                'room_number' => $p->tenant->room->nomor_kamar ?? '-',
+                'tenant_name' => $p->tenant->nama ?? '-',
+                'amount' => $p->amount,
+                'due_date' => $p->due_date,
+                'status' => $p->status,
+                'status_label' => $p->status_label ?? ucfirst($p->status),
+                'status_color' => $this->mapPaymentStatusColor($p->status),
+                'last_notified_at' => $p->last_notified_at,
             ]);
 
         // === Chart Data (Last 6 Months) ===
@@ -143,6 +159,7 @@ class DashboardAdminController extends Controller
             ],
             'recent_payments' => $recentPayments,
             'recent_maintenance' => $recentMaintenance,
+            'reminder_logs' => $reminderLogs,
         ]);
     }
 

@@ -4,6 +4,19 @@ import LayoutAdmin from '@/components/teraZ/admin/LayoutAdmin';
 import { BedDouble, Users, TriangleAlert, NotebookText, Wallet, ChartNoAxesCombined, TrendingUp, DollarSign, Wrench, BarChart3, AlertCircle, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
+interface PaymentItem {
+  id: number;
+  amount: number;         // sesuaikan dengan field di Payment-mu (nominal/total dll)
+  status: string;
+  due_date?: string | null;
+  tenant?: {
+    nama: string;
+  } | null;
+  room?: {
+    nomor_kamar: string;
+  } | null;
+}
+
 interface DashboardAdminProps {
     user: {
         name: string;
@@ -34,11 +47,27 @@ interface DashboardAdminProps {
             total_outcome: number;
             total_profit: number;
         };
+
+        unpaidPayments: any[];
     };
     chart_data: ChartDataPoint[];
     recent_payments: RecentPayment[];
     recent_maintenance: RecentMaintenance[];
+    reminder_logs: ReminderLog[];
 }
+
+interface ReminderLog {
+    id: number;
+    room_number: string;
+    tenant_name: string;
+    amount: number;
+    due_date: string;
+    status: string;
+    status_label: string;
+    status_color: string;
+    last_notified_at: string | null;
+}
+
 
 interface ChartDataPoint {
     month: string;
@@ -213,6 +242,7 @@ const PriceRecommendation: React.FC<{
     const recommendedNewPrice = avgCurrentPrice * (1 + recommendedIncrease / 100);
     const additionalMonthlyIncome = (recommendedNewPrice - avgCurrentPrice) * stats.rooms.occupied;
     const additionalYearlyIncome = additionalMonthlyIncome * 12;
+    const priceIncrease = recommendedNewPrice - avgCurrentPrice;
 
     const getUrgencyBadge = () => {
         switch (urgency) {
@@ -340,7 +370,7 @@ const PriceRecommendation: React.FC<{
     );
 };
 
-const DashboardAdminPage: React.FC<DashboardAdminProps> = ({ user, stats, chart_data, recent_payments, recent_maintenance }) => {
+const DashboardAdminPage: React.FC<DashboardAdminProps> = ({ user, stats, chart_data, recent_payments, recent_maintenance, reminder_logs }) => {
     const getPaymentStatusColor = (color: string) => {
         switch (color) {
             case 'yellow':
@@ -522,6 +552,8 @@ const DashboardAdminPage: React.FC<DashboardAdminProps> = ({ user, stats, chart_
                     <div className="mb-6">
                         <h2 className="text-2xl font-bold text-[#412E27] mb-1">Statistik Keuangan</h2>
                         <p className="text-base text-[#6B5D52]">Pendapatan vs Pengeluaran (6 Bulan Terakhir)</p>
+
+
                     </div>
 
                     <ResponsiveContainer width="100%" height={400}>

@@ -23,7 +23,7 @@ class PaymentAdminController extends Controller
             'period_month' => ['required','integer','between:1,12'],
             'due_date'     => ['required','date'],
             'amount'       => ['required','integer','min:0'],
-            'note'         => ['nullable','string'],
+            'notes'         => ['nullable','string'],
         ]);
 
         // pastikan room_id sesuai dengan room yang memang ditempati tenant
@@ -48,18 +48,40 @@ class PaymentAdminController extends Controller
 
         $payment = Payment::create([
             'tenant_id'    => $data['tenant_id'],
-            'room_id'      => $data['room_id'],
+            //'room_id'      => $data['room_id'],
             'period_year'  => $data['period_year'],
             'period_month' => $data['period_month'],
             'due_date'     => $data['due_date'],
             'amount'       => $data['amount'],
             'status'       => 'pending',
-            'note'         => $data['note'] ?? null,
+            'notes'         => $data['notes'] ?? null,
         ]);
 
         return response()->json([
             'message' => 'Tagihan berhasil dibuat',
             'payment' => $payment
         ], 201);
+    }
+
+    public function updateStatus(Request $request, Payment $payment)
+    {
+        $request->validate([
+            'status' => 'required|in:pending,paid,confirmed,rejected'
+        ]);
+
+        $payment->status = $request->status;
+
+        // Jika admin menandai pembayaran lunas,
+        // hentikan semua notifikasi
+        if (in_array($request->status, ['paid','confirmed'])) {
+            $payment->last_notified_at = now();
+        }
+
+        $payment->save();
+
+        return response()->json([
+            'message' => 'Status pembayaran berhasil diperbarui.',
+            'payment' => $payment
+        ]);
     }
 }

@@ -422,7 +422,7 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-[#412E27] mb-2">
-                Nama Lengkap <span className="text-red-500">*</span>
+                Nama <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -436,7 +436,7 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-[#412E27] mb-2">
-                Email (opsional - untuk akun login)
+                Email
               </label>
               <input
                 type="email"

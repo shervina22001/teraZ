@@ -13,7 +13,7 @@ interface LayoutAdminProps {
 }
 
 const LayoutAdmin: React.FC<LayoutAdminProps> = ({ 
-    title = "Arzeta Co - Living", 
+    title = 'Arzeta Co - Living', 
     currentPath = '',
     children 
 }) => {

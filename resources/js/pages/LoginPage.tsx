@@ -1,6 +1,6 @@
 import React, { useState, FormEvent, ChangeEvent } from 'react';
 import axios, { AxiosError } from 'axios';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, Eye, EyeOff } from 'lucide-react';
 
 interface LoginFormData {
   name: string;
@@ -130,15 +130,15 @@ const LoginPage: React.FC = () => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Username */}
                 <div>
-                  <label htmlFor="name" className="block text-[#3D3D3D] font-medium mb-3 text-base font-['Poppins']">Username</label>
+                  <label htmlFor="name" className="block text-[#3D3D3D] font-medium mb-3 text-base font-['Poppins']">Name</label>
                   <div className="relative flex items-center">
-                    <Mail className="absolute left-0 h-5 w-5 text-gray-400" />
+                    <User className="absolute left-0 h-5 w-5 text-gray-400" />
                     <input
                       type="text"
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
-                      placeholder="your username"
+                      placeholder="your name"
                       className="w-full pl-8 pr-3 py-3 border-b-2 border-gray-400 focus:border-[#7D4E3D] outline-none bg-transparent placeholder-gray-400 text-gray-800 text-base font-['Poppins']"
                     />
                   </div>
