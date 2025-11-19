@@ -6,6 +6,7 @@ use App\Models\Room;
 use App\Models\Tenant;
 use App\Models\Payment;
 use App\Models\MaintenanceRequest;
+use App\Models\Pengeluaran;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
@@ -40,17 +41,30 @@ class DashboardAdminController extends Controller
             ->where('period_year', $currentYear)
             ->sum('amount');
 
-        $monthlyOutcome = MaintenanceRequest::where('status', 'done')
+        $totalIncome = Payment::where('status', 'confirmed')->sum('amount');
+
+        // === Maintenance Outcome (Bulanan & Total) ===
+        $maintenanceMonthly = MaintenanceRequest::where('status', 'done')
             ->whereMonth('dilaporkan_pada', $currentMonth)
             ->whereYear('dilaporkan_pada', $currentYear)
             ->sum('biaya');
 
-        $totalIncome = Payment::where('status', 'confirmed')->sum('amount');
-        $totalOutcome = MaintenanceRequest::where('status', 'done')->sum('biaya');
+        $maintenanceTotal = MaintenanceRequest::where('status', 'done')->sum('biaya');
+
+        // === Pengeluaran Admin (Bulanan & Total) ===
+        $adminOutcomeMonthly = Pengeluaran::whereMonth('tanggal', $currentMonth)
+            ->whereYear('tanggal', $currentYear)
+            ->sum('nominal');
+
+        $adminOutcomeTotal = Pengeluaran::sum('nominal');
+
+        // === Total Outcome (Maintenance + Admin Pengeluaran) ===
+        $monthlyOutcome = $maintenanceMonthly + $adminOutcomeMonthly;
+        $totalOutcome   = $maintenanceTotal + $adminOutcomeTotal;
 
         // === Derived Metrics (Profit) ===
         $monthlyProfit = $monthlyIncome - $monthlyOutcome;
-        $totalProfit = $totalIncome - $totalOutcome;
+        $totalProfit   = $totalIncome - $totalOutcome;
 
         // === Recent Payments (Last 5) ===
         $recentPayments = Payment::with(['tenant.room'])
@@ -103,22 +117,34 @@ class DashboardAdminController extends Controller
             ]);
 
         // === Chart Data (Last 6 Months) ===
+        // === Chart Data (6 Bulan Terakhir, Income vs Outcome) ===
         $chartData = collect(range(5, 0))
             ->map(function ($i) use ($now) {
                 $date = $now->copy()->subMonths($i);
                 $month = $date->month;
                 $year = $date->year;
+
                 $monthName = $this->monthNameShort($month);
 
+                // pendapatan
                 $income = Payment::where('status', 'confirmed')
                     ->where('period_month', $month)
                     ->where('period_year', $year)
                     ->sum('amount');
 
-                $outcome = MaintenanceRequest::where('status', 'done')
+                // pengeluaran maintenance
+                $maintenanceOutcome = MaintenanceRequest::where('status', 'done')
                     ->whereMonth('dilaporkan_pada', $month)
                     ->whereYear('dilaporkan_pada', $year)
                     ->sum('biaya');
+
+                // pengeluaran admin
+                $adminOutcome = Pengeluaran::whereMonth('tanggal', $month)
+                    ->whereYear('tanggal', $year)
+                    ->sum('nominal');
+
+                // total
+                $outcome = $maintenanceOutcome + $adminOutcome;
 
                 return [
                     'month' => "{$monthName} {$year}",
@@ -128,7 +154,7 @@ class DashboardAdminController extends Controller
                 ];
             });
 
-        // === Return Inertia Data ===
+        // === Return to Inertia ===
         return Inertia::render('admin/DashboardAdminPage', [
             'user' => Auth::user(),
             'chart_data' => $chartData,
@@ -163,14 +189,12 @@ class DashboardAdminController extends Controller
         ]);
     }
 
-    /** Format payment period as readable month/year */
     private function getPaymentPeriod(Payment $payment): string
     {
         if (!$payment->period_month || !$payment->period_year) return '-';
         return $this->monthNameFull($payment->period_month) . ' ' . $payment->period_year;
     }
 
-    /** Map payment type to readable label */
     private function mapPaymentType(?string $type): string
     {
         return match ($type) {
@@ -182,7 +206,6 @@ class DashboardAdminController extends Controller
         };
     }
 
-    /** Map payment status to color */
     private function mapPaymentStatusColor(string $status): string
     {
         return match ($status) {
@@ -194,7 +217,6 @@ class DashboardAdminController extends Controller
         };
     }
 
-    /** Map maintenance status to readable label */
     private function mapMaintenanceStatus(string $status): string
     {
         return match ($status) {
@@ -205,7 +227,6 @@ class DashboardAdminController extends Controller
         };
     }
 
-    /** Map maintenance status to color */
     private function mapMaintenanceStatusColor(string $status): string
     {
         return match ($status) {
@@ -216,7 +237,6 @@ class DashboardAdminController extends Controller
         };
     }
 
-    /** Helper: Month name short form */
     private function monthNameShort(int $month): string
     {
         return [
@@ -226,7 +246,6 @@ class DashboardAdminController extends Controller
         ][$month] ?? '-';
     }
 
-    /** Helper: Month name full form */
     private function monthNameFull(int $month): string
     {
         return [

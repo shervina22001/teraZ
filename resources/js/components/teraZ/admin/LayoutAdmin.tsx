@@ -12,10 +12,10 @@ interface LayoutAdminProps {
     children: React.ReactNode;
 }
 
-const LayoutAdmin: React.FC<LayoutAdminProps> = ({ 
-    title = 'Arzeta Co - Living', 
+const LayoutAdmin: React.FC<LayoutAdminProps> = ({
+    title = 'Arzeta Co - Living',
     currentPath = '',
-    children 
+    children,
 }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -27,12 +27,14 @@ const LayoutAdmin: React.FC<LayoutAdminProps> = ({
         setIsSidebarOpen(!isSidebarOpen);
     };
 
+    // Tambahkan Pengeluaran di sini
     const menuItems = [
         { name: 'Dashboard', path: '/admin/dashboard' },
         { name: 'Kelola Kamar', path: '/admin/rooms' },
         { name: 'Penghuni', path: '/admin/tenants' },
         { name: 'Keuangan', path: '/admin/keuangan' },
         { name: 'Maintenance', path: '/admin/maintenance' },
+        { name: 'Pengeluaran', path: '/admin/pengeluaran' },
     ];
 
     const isActive = (path: string) => currentPath === path;
@@ -43,14 +45,14 @@ const LayoutAdmin: React.FC<LayoutAdminProps> = ({
     return (
         <div className="min-h-screen bg-white">
             {/* Navbar */}
-            <nav 
+            <nav
                 className="bg-[#F5F2EE] shadow-sm fixed top-0 left-0 right-0 z-50 border-b border-[#CCB89D]"
                 style={{ height: NAVBAR_HEIGHT }}
             >
                 <div className="flex items-center justify-between px-6 h-full">
                     {/* Left Section - Menu Toggle & Logo */}
                     <div className="flex items-center gap-4">
-                        <button 
+                        <button
                             onClick={toggleSidebar}
                             className="text-[#412E27] hover:text-[#765447] focus:outline-none flex-shrink-0"
                             aria-label="Toggle Sidebar"
@@ -58,9 +60,9 @@ const LayoutAdmin: React.FC<LayoutAdminProps> = ({
                             <Menu className="w-7 h-7" strokeWidth={2} />
                         </button>
 
-                        <img 
-                            src="/teraZ/logo.png" 
-                            alt="Logo" 
+                        <img
+                            src="/teraZ/logo.png"
+                            alt="Logo"
                             className="h-14 w-14 rounded-full object-cover flex-shrink-0"
                         />
                     </div>
@@ -92,10 +94,10 @@ const LayoutAdmin: React.FC<LayoutAdminProps> = ({
                 className={`fixed left-0 bg-[#F5F2EE] transition-transform duration-300 z-40 shadow-lg ${
                     isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
                 }`}
-                style={{ 
-                    width: '230px', 
-                    top: NAVBAR_HEIGHT, 
-                    height: `calc(100vh - ${NAVBAR_HEIGHT})` 
+                style={{
+                    width: '230px',
+                    top: NAVBAR_HEIGHT,
+                    height: `calc(100vh - ${NAVBAR_HEIGHT})`,
                 }}
             >
                 <div className="flex flex-col h-full">
@@ -107,13 +109,13 @@ const LayoutAdmin: React.FC<LayoutAdminProps> = ({
                                     <Link
                                         href={item.path}
                                         className={`block px-8 py-6 text-lg border-b border-[#dfceb7] transition-colors relative ${
-                                            isActive(item.path) 
-                                                ? 'text-[#412E27] font-semibold' 
+                                            isActive(item.path)
+                                                ? 'text-[#412E27] font-semibold'
                                                 : 'text-[#412E27] hover:bg-[#CCB89D]'
                                         }`}
                                     >
                                         {isActive(item.path) && (
-                                            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#412E27]"></div>
+                                            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#412E27]" />
                                         )}
                                         {item.name}
                                     </Link>
@@ -125,19 +127,17 @@ const LayoutAdmin: React.FC<LayoutAdminProps> = ({
             </aside>
 
             {/* Main Content */}
-            <main 
+            <main
                 className="transition-all duration-300 bg-[#E5E0D8] min-h-screen"
-                style={{ 
+                style={{
                     marginLeft: isSidebarOpen ? '228px' : '0',
-                    paddingTop: NAVBAR_HEIGHT
+                    paddingTop: NAVBAR_HEIGHT,
                 }}
             >
-                <div className="p-6">
-                    {children}
-                </div>
+                <div className="p-6">{children}</div>
             </main>
         </div>
     );
-}
+};
 
 export default LayoutAdmin;

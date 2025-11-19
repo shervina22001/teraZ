@@ -12,6 +12,7 @@ use App\Http\Controllers\MaintenanceAdminController;
 use App\Http\Controllers\DashboardAdminController;
 use App\Http\Controllers\MaintenanceController;
 use Inertia\Inertia;
+use App\Http\Controllers\PengeluaranController;
 
 Route::get('/', fn () => Inertia::render('LandingPage'))->name('landing');
 
@@ -96,4 +97,10 @@ Route::post('/admin/payments/{payment}/test-approve', function(\App\Models\Payme
     
     return redirect('/admin/keuangan')->with('success', 'Test approve berhasil!');
 })->middleware(['auth', 'role:admin']);
+});
+    // Pengeluaran Management
+    Route::get('/pengeluaran', [PengeluaranController::class, 'index'])->name('pengeluaran.index');
+    Route::post('/pengeluaran', [PengeluaranController::class, 'store'])->name('pengeluaran.store');
+    Route::patch('/pengeluaran/{id}', [PengeluaranController::class, 'update'])->name('pengeluaran.update');
+    Route::delete('/pengeluaran/{id}', [PengeluaranController::class, 'destroy'])->name('pengeluaran.destroy');
 });
