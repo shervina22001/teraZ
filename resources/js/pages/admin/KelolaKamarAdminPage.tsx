@@ -276,6 +276,7 @@ const KelolaKamarAdmin: React.FC<KelolaKamarAdminProps> = ({ user, rooms: initia
   };
 
   return (
+
     <LayoutAdmin user={user} currentPath="/admin/rooms">
       {/* Header and Tambah Kamar button */}
       <div className="mb-8 mt-6 flex justify-between items-center">
