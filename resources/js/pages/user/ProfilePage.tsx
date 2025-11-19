@@ -37,9 +37,10 @@ interface Props {
     tenant: Tenant;
     room: Room;
     contract: Contract;
+    unpaidCount: number;
 }
 
-const Profile: React.FC<Props> = ({ user, tenant, room, contract }) => {
+const Profile: React.FC<Props> = ({ user, tenant, room, contract, unpaidCount }) => {
     const [showPhotoModal, setShowPhotoModal] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -171,7 +172,7 @@ const Profile: React.FC<Props> = ({ user, tenant, room, contract }) => {
         <>
             <Head title="Profile" />
 
-            <Layout user={user} currentPath="/profile">
+            <Layout user={user} currentPath="/profile"unpaidCount={unpaidCount}>
                 {/* Page Title */}
                 <h1 className="text-3xl font-semibold text-[#7A2B1E] mt-8 mb-8">Profil Penyewa</h1>
 

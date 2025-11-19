@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tenant;
+use App\Models\Payment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
@@ -25,6 +26,10 @@ class UserController extends Controller
         if (!$tenant) {
             return redirect()->route('dashboard')->with('error', 'Data tenant tidak ditemukan.');
         }
+
+        $unpaidCount = $tenant->payments()
+        ->where('status', 'pending')   // sesuaikan kalau status di DB-mu beda, misal 'unpaid'
+        ->count();
 
         // Map data room
         $room = $tenant->room ? [
@@ -66,6 +71,8 @@ class UserController extends Controller
             ],
             'room'     => $room,
             'contract' => $contract,
+
+            'unpaidCount' => $unpaidCount,
         ]);
     }
 

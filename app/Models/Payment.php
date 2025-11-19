@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
-
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
+
 
 class Payment extends Model
 {
@@ -24,6 +26,7 @@ class Payment extends Model
         'period_year',
         'paid_at',
         'payment_proof',
+        'last_notified_at',
     ];
 
     protected $appends = ['payment_proof_url'];
@@ -49,6 +52,7 @@ class Payment extends Model
         'due_date' => 'date',
         'payment_date' => 'date',
         'paid_at' => 'datetime',
+        'last_notified_at'=> 'datetime',
     ];
 
     public function tenant()
@@ -106,5 +110,30 @@ class Payment extends Model
         ];
 
         return $months[$this->period_month] . ' ' . $this->period_year;
+    }
+
+     /**
+     * Scope: pembayaran yang butuh DIINGATKAN
+     *
+     * Alur:
+     * 1. Hanya ambil status "pending" (belum bayar).
+     *    - Kalau admin ubah ke "paid" / "confirmed" / "rejected",
+     *      otomatis keluar dari query ini → tidak dikirimi notifikasi lagi.
+     * 2. due_date <= hari ini → sudah jatuh tempo atau tepat hari ini.
+     * 3. last_notified_at:
+     *    - null  → belum pernah dikirimi pengingat.
+     *    - atau terakhir kirim BUKAN hari ini → cegah spam harian.
+     */
+
+    public function scopeNeedReminder($query)
+    {
+        $today = Carbon::today();
+
+        return $query->where('status', 'pending')
+            ->whereDate('due_date', '<=', $today)
+            ->where(function ($q) use ($today) {
+                $q->whereNull('last_notified_at')
+                  ->orWhereDate('last_notified_at', '<', $today);
+            });
     }
 }

@@ -100,6 +100,23 @@ class DashboardAdminController extends Controller
                 'biaya' => $m->biaya,
             ]);
 
+            $reminderLogs = Payment::with(['tenant.room'])
+            ->whereNotNull('last_notified_at')
+            ->orderByDesc('last_notified_at')
+            ->get()
+            ->map(fn($p) => [
+                'id' => $p->id,
+                'room_number' => $p->tenant->room->nomor_kamar ?? '-',
+                'tenant_name' => $p->tenant->nama ?? '-',
+                'amount' => $p->amount,
+                'due_date' => $p->due_date,
+                'status' => $p->status,
+                'status_label' => $p->status_label ?? ucfirst($p->status),
+                'status_color' => $this->mapPaymentStatusColor($p->status),
+                'last_notified_at' => $p->last_notified_at,
+            ]);
+
+        // === Chart Data (Last 6 Months) ===
         // === Chart Data (6 Bulan Terakhir, Income vs Outcome) ===
         $chartData = collect(range(5, 0))
             ->map(function ($i) use ($now) {
@@ -168,6 +185,7 @@ class DashboardAdminController extends Controller
             ],
             'recent_payments' => $recentPayments,
             'recent_maintenance' => $recentMaintenance,
+            'reminder_logs' => $reminderLogs,
         ]);
     }
 

@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { router, Link } from '@inertiajs/react';
-import { Menu } from 'lucide-react';
+import { Menu, Bell } from 'lucide-react'; // NEW
 
 interface LayoutUserProps {
   user: {
     id: number;
     name: string;
-    room?: string | null; // ← nomor kamar (opsional), kirim dari backend
+    room?: string | null; // nomor kamar
   };
   title?: string;
   currentPath?: string;
   children: React.ReactNode;
+
+  // jumlah tagihan yang belum dibayar
+  unpaidCount?: number;
 }
 
 const LayoutUser: React.FC<LayoutUserProps> = ({
@@ -18,6 +21,7 @@ const LayoutUser: React.FC<LayoutUserProps> = ({
   title = 'Arzeta Cos - Living',
   currentPath = '',
   children,
+  unpaidCount = 0, // NEW: default 0
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -37,7 +41,6 @@ const LayoutUser: React.FC<LayoutUserProps> = ({
 
   const isActive = (path: string) => currentPath === path;
 
-  // Tinggi navbar agar konsisten
   const NAVBAR_HEIGHT = '81px';
 
   return (
@@ -72,10 +75,25 @@ const LayoutUser: React.FC<LayoutUserProps> = ({
             </h1>
           </div>
 
-          {/* Right: User + Logout */}
+          {/* Right: Notif + User + Logout */}
           <div className="flex items-center gap-4 flex-shrink-0">
+            {/* ============ BAGIAN BARU: NOTIFIKASI ============ */}
+            {unpaidCount > 0 && (
+              <Link
+                href="/pembayaran"
+                className="relative flex items-center gap-2 px-3 py-1 rounded-full border border-[#E57373] bg-[#FBE9E7] hover:bg-[#FFCCBC] transition-colors"
+              >
+                <Bell className="w-4 h-4" />
+                <span className="text-sm text-[#7A2B1E] font-medium">
+                  {unpaidCount} tagihan belum dibayar
+                </span>
+                {/* titik merah kecil */}
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500" />
+              </Link>
+            )}
+            {/* ================================================= */}
+
             <span className="text-[#343434] text-base whitespace-nowrap">
-              {/* Jika room ada → tampilkan "Nama - Kamar X", kalau tidak fallback ke ID */}
               {user.name}
               {user.room && user.room.trim() !== ''
                 ? ` (${user.room})`
