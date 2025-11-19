@@ -39,6 +39,40 @@ class TenantAdminController extends Controller
         }
 
         return $q->paginate((int) $request->get('per_page', 15));
+
+        $tenants->getCollection()->transform(function (Tenant $t) {
+        return [
+            'id'            => $t->id,
+            'nama'          => $t->nama,
+            'kontak'        => $t->kontak,
+            'status'        => $t->status,
+            'tanggal_mulai' => $t->tanggal_mulai,
+            'tanggal_selesai' => $t->tanggal_selesai,
+            'catatan'       => $t->catatan,
+            'created_at'    => $t->created_at,
+            'updated_at'    => $t->updated_at,
+
+            // ⬇️ inilah yang kamu tanyakan
+            'profile_photo' => $t->profile_photo_full,
+
+            // Kalau admin butuh info user & room juga:
+            'user' => [
+                'id'       => $t->user?->id,
+                'name'     => $t->user?->name,
+                'username' => $t->user?->username,
+                'phone'    => $t->user?->phone,
+                'role'     => $t->user?->role,
+            ],
+            'room' => [
+                'id'     => $t->room?->id,
+                'number' => $t->room?->number,
+                'type'   => $t->room?->type,
+                'status' => $t->room?->status,
+            ],
+        ];
+    });
+
+        return $tenants;
     }
 
     public function store(Request $request)

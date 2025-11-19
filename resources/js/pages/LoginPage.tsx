@@ -1,9 +1,9 @@
 import React, { useState, FormEvent, ChangeEvent } from 'react';
 import axios, { AxiosError } from 'axios';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, Eye, EyeOff } from 'lucide-react';
 
 interface LoginFormData {
-  username: string;
+  name: string;
   password: string;
 }
 
@@ -26,10 +26,10 @@ interface LoginError {
 }
 
 const LoginPage: React.FC = () => {
-  const [formData, setFormData] = useState<LoginFormData>({ username: '', password: '' });
+  const [formData, setFormData] = useState<LoginFormData>({ name: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ username?: string; password?: string; general?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; password?: string; general?: string }>({});
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
@@ -42,8 +42,8 @@ const LoginPage: React.FC = () => {
   };
 
   const validateForm = (): boolean => {
-    const newErrors: { username?: string; password?: string } = {};
-    if (!formData.username.trim()) newErrors.username = 'Username harus diisi';
+    const newErrors: { name?: string; password?: string } = {};
+    if (!formData.name.trim()) newErrors.name = 'Username harus diisi';
     if (!formData.password) newErrors.password = 'Password harus diisi';
     else if (formData.password.length < 6) newErrors.password = 'Password minimal 6 karakter';
     setErrors(newErrors);
@@ -66,7 +66,7 @@ const LoginPage: React.FC = () => {
           withCredentials: true, // pastikan cookie/session dikirim
         }
       );
-
+      console.log(`${API_BASE}/login`)
       if (response.status === 200) {
         const data = response.data;
 
@@ -86,8 +86,8 @@ const LoginPage: React.FC = () => {
         const data = axiosError.response.data;
         if (status === 401) setErrors({ general: 'Username atau password salah' });
         else if (status === 422) {
-          const validationErrors: { username?: string; password?: string } = {};
-          if (data.errors?.username) validationErrors.username = data.errors.username[0];
+          const validationErrors: { name?: string; password?: string } = {};
+          if (data.errors?.name) validationErrors.name = data.errors.name[0];
           if (data.errors?.password) validationErrors.password = data.errors.password[0];
           setErrors(validationErrors);
         } else setErrors({ general: data.message || 'Login gagal. Silakan coba lagi' });
@@ -104,19 +104,19 @@ const LoginPage: React.FC = () => {
     <div className="h-screen w-full bg-[#827062] flex items-center justify-center p-4 overflow-hidden">
       <div className="w-full max-w-[95%] sm:max-w-[85%] md:max-w-2xl lg:max-w-3xl xl:max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden">
         <div className="flex flex-col md:flex-row h-[580px] sm:h-[620px] md:h-[640px] lg:h-[660px]">
-          
+
           {/* Left Section - Form */}
           <div className="w-full md:w-1/2 bg-[#F5F1ED] px-6 sm:px-10 md:px-12 lg:px-16 py-10 sm:py-12 md:py-14 flex flex-col justify-center">
             <div className="w-full max-w-md mx-auto">
-              
+
               <div className="mb-10 sm:mb-12 text-center">
                 <h1 className="text-[28px] font-semibold text-[#7A2B1E] font-['Poppins']">Welcome to</h1>
                 <h2 className="text-[28px] font-semibold font-['Poppins']"
-                    style={{
-                      background: 'linear-gradient(90deg, #7A2B1E 55.77%, #F1E0CB 100%)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent'
-                    }}>
+                  style={{
+                    background: 'linear-gradient(90deg, #7A2B1E 55.77%, #F1E0CB 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent'
+                  }}>
                   Arzeta Co-Living!
                 </h2>
               </div>
@@ -130,20 +130,20 @@ const LoginPage: React.FC = () => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Username */}
                 <div>
-                  <label htmlFor="username" className="block text-[#3D3D3D] font-medium mb-3 text-base font-['Poppins']">Username</label>
+                  <label htmlFor="name" className="block text-[#3D3D3D] font-medium mb-3 text-base font-['Poppins']">Name</label>
                   <div className="relative flex items-center">
-                    <Mail className="absolute left-0 h-5 w-5 text-gray-400" />
+                    <User className="absolute left-0 h-5 w-5 text-gray-400" />
                     <input
                       type="text"
-                      name="username"
-                      value={formData.username}
+                      name="name"
+                      value={formData.name}
                       onChange={handleInputChange}
-                      placeholder="your username"
+                      placeholder="your name"
                       className="w-full pl-8 pr-3 py-3 border-b-2 border-gray-400 focus:border-[#7D4E3D] outline-none bg-transparent placeholder-gray-400 text-gray-800 text-base font-['Poppins']"
                     />
                   </div>
                   <div className="h-5 mt-1">
-                    {errors.username && <p className="text-xs text-red-600 mt-1">{errors.username}</p>}
+                    {errors.name && <p className="text-xs text-red-600 mt-1">{errors.name}</p>}
                   </div>
                 </div>
 

@@ -12,6 +12,7 @@
     },
     "devDependencies": {
         "@eslint/js": "^9.19.0",
+        "@types/jquery": "^3.5.33",
         "@types/node": "^22.13.5",
         "@types/react": "^19.1.16",
         "@types/react-dom": "^19.1.9",

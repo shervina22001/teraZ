@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\RoomController;
+use Illuminate\Support\Facades\Storage;
 
 class TenantController extends Controller
 {
@@ -23,7 +24,9 @@ class TenantController extends Controller
                 'phone' => $tenant->kontak,
                 'roomNumber' => $tenant->room ? $tenant->room->nomor_kamar : '-',
                 'status' => $this->mapPaymentStatus($tenant),
-                'photo' => '/teraZ/testi1.png', // Default photo, can be customized
+                'photo' => $tenant->profile_photo 
+                    ? asset('storage/' . $tenant->profile_photo) . '?v=' . strtotime($tenant->updated_at) 
+                    : asset('teraZ/testi1.png'),
                 'start_date' => $tenant->tanggal_mulai?->format('Y-m-d'),
                 'end_date' => $tenant->tanggal_selesai?->format('Y-m-d'),
                 'tenant_status' => $tenant->status,
@@ -35,6 +38,16 @@ class TenantController extends Controller
         return Inertia::render('admin/ManajemenPenghuniAdminPage', [
             'tenants' => $tenants,
             'availableRooms' => $rooms,
+        ]);
+
+        return Inertia::render('user/Profile', [
+            'user'    => $user,
+            'tenant'  => [
+                'id'            => $tenant->id,
+                'profile_photo' => $tenant->profile_photo_full, // <- PERHATIKAN INI
+                'updated_at'    => $tenant->updated_at,
+            ],
+            // room, contract, dst...
         ]);
     }
 
@@ -113,8 +126,10 @@ class TenantController extends Controller
         ]);
 
         // Update user email if username provided
-        if ($tenant->user && isset($validated['username'])) {
-            $tenant->user->update(['email' => $validated['username']]);
+        if ($tenant->user) {
+            $tenant->user->update([
+                'name' => $validated['name'], // Also use unique name!
+            ]);
         }
 
         return redirect()->back()->with('success', 'Tenant updated successfully.');
@@ -127,6 +142,11 @@ class TenantController extends Controller
         
         // Get room before deleting tenant
         $roomId = $tenant->room_id;
+        
+        // Hapus foto profil jika ada
+        if ($tenant->profile_photo && Storage::disk('public')->exists($tenant->profile_photo)) {
+            Storage::disk('public')->delete($tenant->profile_photo);
+        }
         
         // Delete tenant
         $tenant->delete();
@@ -143,6 +163,73 @@ class TenantController extends Controller
         }
 
         return redirect()->back()->with('success', 'Tenant removed successfully.');
+    }
+
+    /**
+     * FIXED: Update foto profil untuk tenant yang sedang login
+     * Route: POST /profile/update-photo
+     */
+    public function updateProfilePhoto(Request $request)
+    {
+        // Validasi file
+        $request->validate([
+            'profile_photo' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        // Dapatkan user yang sedang login
+        $user = Auth::user();
+        
+        // Dapatkan tenant berdasarkan user_id
+        $tenant = Tenant::where('user_id', $user->id)->firstOrFail();
+
+        // Hapus foto lama jika ada
+        if ($tenant->profile_photo && Storage::disk('public')->exists($tenant->profile_photo)) {
+            Storage::disk('public')->delete($tenant->profile_photo);
+        }
+
+        // Simpan foto baru dengan nama unik
+        $file = $request->file('profile_photo');
+        $filename = 'tenant_' . $tenant->id . '_' . time() . '.' . $file->extension();
+        $path = $file->storeAs('profile_photos', $filename, 'public');
+
+        // Update path foto di database dan timestamp updated_at
+        $tenant->update([
+            'profile_photo' => $path,
+            'updated_at' => now(), // Force update timestamp
+        ]);
+
+        return back()->with('success', 'Foto profil berhasil diperbarui.');
+    }
+
+    /**
+     * OPTIONAL: Update foto profil untuk tenant tertentu (untuk admin)
+     * Route: POST /admin/tenants/{id}/update-photo
+     */
+    public function updatePhotoById(Request $request, $id)
+    {
+        $tenant = Tenant::findOrFail($id);
+
+        $request->validate([
+            'profile_photo' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        // Hapus foto lama jika ada
+        if ($tenant->profile_photo && Storage::disk('public')->exists($tenant->profile_photo)) {
+            Storage::disk('public')->delete($tenant->profile_photo);
+        }
+
+        // Simpan foto baru
+        $file = $request->file('profile_photo');
+        $filename = 'tenant_' . $tenant->id . '_' . time() . '.' . $file->extension();
+        $path = $file->storeAs('profile_photos', $filename, 'public');
+
+        // Update path foto di database
+        $tenant->update([
+            'profile_photo' => $path,
+            'updated_at' => now(),
+        ]);
+
+        return back()->with('success', 'Foto profil tenant berhasil diperbarui.');
     }
 
     // Helper function to map payment status

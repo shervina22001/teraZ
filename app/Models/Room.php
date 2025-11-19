@@ -17,18 +17,22 @@ class Room extends Model
         'fasilitas',
     ];
 
-    // Eager-load relasi ini setiap kali ambil Room
-    protected $with = ['tenants', 'maintenanceRequests'];
+    // ❌ REMOVE THIS - causes N+1 queries and performance issues
+    // protected $with = ['tenants', 'maintenanceRequests'];
+
+    protected $casts = [
+        'harga' => 'decimal:2',
+    ];
 
     public function tenants()
     {
-        // FK: tenants.room_id → rooms.id
+
         return $this->hasMany(Tenant::class, 'room_id', 'id');
     }
 
     public function maintenanceRequests()
     {
-        // FK: maintenance_requests.room_id → rooms.id
+        
         return $this->hasMany(MaintenanceRequest::class, 'room_id', 'id');
     }
 }

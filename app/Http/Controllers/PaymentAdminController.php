@@ -4,207 +4,325 @@ namespace App\Http\Controllers;
 
 use App\Models\Payment;
 use App\Models\Tenant;
-use App\Models\Room;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 class PaymentAdminController extends Controller
 {
-    // Show finance page
-    public function index()
+    /**
+     * Tampilkan semua pembayaran untuk admin
+     */
+    public function index(Request $request)
     {
-        // Calculate statistics
-        $totalPendapatan = Payment::where('status', 'paid')->sum('amount');
-        $pembayaranTertunda = Payment::whereIn('status', ['pending', 'overdue'])->sum('amount');
-        
-        // For now, pengeluaran is 0 (can be added later with expenses table)
-        $totalPengeluaran = 0;
-        $keuntunganBersih = $totalPendapatan - $totalPengeluaran;
+        $statusFilter = $request->input('status');
 
-        // Get pemasukan (paid payments)
-        $pemasukan = Payment::with(['tenant.room'])
-            ->where('status', 'paid')
-            ->orderBy('paid_at', 'desc')
-            ->get()
-            ->map(function ($payment) {
-                return [
-                    'id' => $payment->id,
-                    'kamar' => 'Kamar ' . ($payment->tenant->room->nomor_kamar ?? '-'),
-                    'kategori' => ucfirst($payment->payment_type),
-                    'tanggal' => $payment->paid_at ? Carbon::parse($payment->paid_at)->format('d M Y') : '-',
-                    'jumlah' => $payment->amount,
-                ];
-            });
+        $query = Payment::with(['tenant.room'])
+            ->orderByDesc('period_year')
+            ->orderByDesc('period_month')
+            ->orderByDesc('created_at');
 
-        // Pengeluaran (empty for now)
-        $pengeluaran = [];
-
-        // Get pending payments
-        $pending = Payment::with(['tenant.room'])
-            ->where('status', 'pending')
-            ->orWhere('status', 'overdue')
-            ->orderBy('due_date', 'asc')
-            ->get()
-            ->map(function ($payment) {
-                return [
-                    'id' => $payment->id,
-                    'kamar' => 'Kamar ' . ($payment->tenant->room->nomor_kamar ?? '-'),
-                    'periode' => $payment->period_month && $payment->period_year 
-                        ? Carbon::create($payment->period_year, $payment->period_month)->format('F Y')
-                        : ucfirst($payment->payment_type),
-                    'jatuh_tempo' => Carbon::parse($payment->due_date)->format('d M Y'),
-                    'jumlah' => $payment->amount,
-                    'bukti_pembayaran' => $payment->reference,
-                ];
-            });
-
-        $currentYear = now()->year;
-
-        $payments = Payment::where('status', 'paid')
-            ->where('period_year', $currentYear)
-            ->get();
-
-        // Siapkan array default 12 bulan
-        $months = collect(range(1, 12))->mapWithKeys(fn($m) => [
-            $m => ['income' => 0, 'expense' => 0]
-        ]);
-
-        foreach ($payments as $payment) {
-            $month = $payment->period_month ?? Carbon::parse($payment->paid_at)->month;
-            $months[$month]['income'] += $payment->amount;
+        // Filter status (optional)
+        if ($statusFilter && $statusFilter !== 'all') {
+            $query->where('status', $statusFilter);
         }
 
-        // Format data grafik
-        $chartData = [];
-        foreach ($months as $monthNum => $values) {
-            $chartData[] = [
-                'name' => Carbon::create()->month($monthNum)->format('F'),
-                'income' => $values['income'],
-                'expense' => $values['expense'],
+        $payments = $query->get()->map(function ($payment) {
+            return [
+                'id'                => $payment->id,
+                'tenant_name'       => $payment->tenant->nama ?? 'Unknown',
+                'tenant_phone'      => $payment->tenant->kontak ?? '-',
+                'room_number'       => $payment->tenant->room->nomor_kamar ?? '-',
+                'payment_type'      => $payment->payment_type,
+                'payment_type_label'=> $this->mapPaymentType($payment->payment_type),
+                'amount'            => $payment->amount,
+                'due_date'          => $payment->due_date->format('d M Y'),
+                'payment_date'      => $payment->payment_date?->format('d M Y'),
+                'status'            => $payment->status,
+                'status_label'      => $payment->status_label,
+                'status_color'      => $payment->status_color,
+                'payment_method'    => $payment->payment_method,
+                'reference'         => $payment->reference ? asset('storage/' . $payment->reference) : null,
+                'has_proof_image'   => (bool) $payment->reference,
+                'notes'             => $payment->notes,
+                'period'            => $payment->period_name,
+                'is_overdue'        => $payment->isOverdue(),
             ];
-        }
-
-        return Inertia::render('admin/KeuanganAdminPage', [
-            'statistics' => [
-                'total_pendapatan' => $totalPendapatan,
-                'pembayaran_tertunda' => $pembayaranTertunda,
-                'total_pengeluaran' => $totalPengeluaran,
-                'keuntungan_bersih' => $keuntunganBersih,
-            ],
-            'pemasukan' => $pemasukan,
-            'pengeluaran' => $pengeluaran,
-            'pending' => $pending,
-            'chartData' => $chartData,
-        ]);
-    }
-
-    // Approve payment
-    public function approvePayment(Request $request, $id)
-    {
-        $payment = Payment::findOrFail($id);
-        
-        $payment->update([
-            'status' => 'paid',
-            'paid_at' => now(),
-        ]);
-
-        return redirect()->back()->with('success', 'Payment approved successfully.');
-    }
-
-    // Reject payment
-    public function rejectPayment(Request $request, $id)
-    {
-        $payment = Payment::findOrFail($id);
-        
-        $payment->update([
-            'status' => 'pending',
-            'reference' => null,
-        ]);
-
-        return redirect()->back()->with('success', 'Payment rejected.');
-    }
-
-    // Generate monthly payments for all active tenants
-    public function generateMonthlyPayments()
-    {
-        $activeTenants = Tenant::with('room')
-            ->where('status', 'aktif')
-            ->whereNotNull('room_id')
-            ->get();
-
-        $currentMonth = now()->month;
-        $currentYear = now()->year;
-        $generatedCount = 0;
-
-        foreach ($activeTenants as $tenant) {
-            // Check if payment already exists for this month
-            $existingPayment = Payment::where('tenant_id', $tenant->id)
-                ->where('period_month', $currentMonth)
-                ->where('period_year', $currentYear)
-                ->where('payment_type', 'rent')
-                ->first();
-
-            if (!$existingPayment && $tenant->room) {
-                Payment::create([
-                    'tenant_id' => $tenant->id,
-                    'payment_type' => 'rent',
-                    'amount' => $tenant->room->harga,
-                    'due_date' => now()->startOfMonth()->addDays(9), // Due on 10th of month
-                    'status' => 'pending',
-                    'period_month' => $currentMonth,
-                    'period_year' => $currentYear,
-                ]);
-                $generatedCount++;
-            }
-        }
-
-        return redirect()->back()->with('success', "Generated {$generatedCount} payment(s) for this month.");
-    }
-
-    public function getMonthlyRevenue()
-    {
-        $currentYear = now()->year;
-
-        // Ambil semua pembayaran 'paid' dalam tahun ini
-        $payments = Payment::where('status', 'paid')
-            ->where('period_year', $currentYear)
-            ->get();
-
-        // Siapkan array default untuk 12 bulan
-        $months = collect(range(1, 12))->mapWithKeys(function ($month) {
-            return [$month => ['income' => 0, 'expense' => 0]];
         });
 
-        // Hitung total pendapatan tiap bulan
-        foreach ($payments as $payment) {
-            $month = $payment->period_month;
-            $months[$month]['income'] += $payment->amount;
-        }
+        // Statistik
+        $stats = [
+            'total'            => Payment::count(),
+            'pending'          => Payment::where('status', 'pending')->count(),
+            'waiting_approval' => Payment::where('status', 'paid')->count(),
+            'confirmed'        => Payment::where('status', 'confirmed')->count(),
+            'rejected'         => Payment::where('status', 'rejected')->count(),
+        ];
 
-        // Format agar mudah dipakai di Recharts
-        $formatted = [];
-        foreach ($months as $monthNum => $values) {
-            $formatted[] = [
-                'name' => Carbon::create()->month($monthNum)->format('F'),
-                'income' => $values['income'],
-                'expense' => $values['expense'],
+        // Data tenant untuk form "Buat Tagihan"
+        $tenants = Tenant::with('room')->get()->map(function ($tenant) {
+            return [
+                'id'         => $tenant->id,
+                'nama'       => $tenant->nama,
+                'room_number'=> $tenant->room->nomor_kamar ?? '-',
+                'room_price' => $tenant->room->harga ?? 0,
             ];
-        }
+        });
 
-        return response()->json($formatted);
+        return Inertia::render('admin/KeuanganAdminPage', [
+            'user'     => Auth::user(),
+            'payments' => $payments,
+            'stats'    => $stats,
+            'tenants'  => $tenants,
+            'filters'  => [
+                'status' => $statusFilter,
+            ],
+        ]);
     }
 
-    // Check and mark overdue payments
-    public function checkOverduePayments()
+    /**
+     * Admin membuat tagihan baru untuk tenant
+     */
+    public function store(Request $request)
     {
-        $overdueCount = Payment::where('status', 'pending')
-            ->where('due_date', '<', now())
-            ->update(['status' => 'overdue']);
-
-        return response()->json([
-            'success' => true,
-            'message' => "Marked {$overdueCount} payment(s) as overdue.",
+        $validated = $request->validate([
+            'tenant_id'    => 'required|exists:tenants,id',
+            'payment_type' => 'required|in:rent,deposit,utilities,maintenance',
+            'amount'       => 'required|numeric|min:0',
+            'due_date'     => 'required|date',
+            'period_month' => 'required|integer|min:1|max:12',
+            'period_year'  => 'required|integer|min:2020|max:2100',
+            'notes'        => 'nullable|string|max:500',
         ]);
+
+        Payment::create([
+            'tenant_id'    => $validated['tenant_id'],
+            'payment_type' => $validated['payment_type'],
+            'amount'       => $validated['amount'],
+            'due_date'     => $validated['due_date'],
+            'period_month' => $validated['period_month'],
+            'period_year'  => $validated['period_year'],
+            'notes'        => $validated['notes'] ?? null,
+            'status'       => 'pending',
+        ]);
+
+        return back()->with('success', 'Tagihan pembayaran berhasil dibuat.');
+    }
+
+    /**
+     * ✅ Admin menyetujui pembayaran
+     */
+    public function approvePayment(Payment $payment)
+    {
+        try {
+            // Hanya boleh approve kalau status sekarang "paid" (Menunggu Konfirmasi)
+            if ($payment->status !== 'paid') {
+                Log::warning('Status tidak valid untuk approve', [
+                    'payment_id' => $payment->id,
+                    'status'     => $payment->status,
+                ]);
+
+                return back()->with(
+                    'error',
+                    'Hanya pembayaran dengan status "Menunggu Konfirmasi" yang bisa disetujui.'
+                );
+            }
+
+            // Update via Eloquent
+            $payment->status = 'confirmed';
+            // Kalau mau set tanggal pembayaran ketika dikonfirmasi:
+            // $payment->payment_date = $payment->payment_date ?? now();
+            $payment->save();
+
+            Log::info('Payment approved successfully', [
+                'payment_id' => $payment->id,
+                'status'     => $payment->status,
+            ]);
+
+            return back()->with('success', 'Pembayaran berhasil dikonfirmasi.');
+        } catch (\Exception $e) {
+            Log::error('Error approving payment', [
+                'payment_id' => $payment->id ?? null,
+                'error'      => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ✅ Admin menolak pembayaran
+     */
+    public function rejectPayment(Request $request, Payment $payment)
+    {
+        try {
+            DB::beginTransaction();
+
+            $validated = $request->validate([
+                'rejection_reason' => 'nullable|string|max:500',
+            ]);
+
+            // Hapus file bukti kalau ada
+            if ($payment->reference) {
+                $path = Str::of($payment->reference)
+                    ->after('storage/')
+                    ->ltrim('/');
+
+                if ($path->isNotEmpty() && Storage::disk('public')->exists($path)) {
+                    Storage::disk('public')->delete($path);
+                }
+            }
+
+            // Reset data pembayaran & tandai ditolak
+            $payment->status         = 'rejected';
+            $payment->notes          = $validated['rejection_reason'] ?? 'Pembayaran ditolak oleh admin.';
+            $payment->payment_method = null;
+            $payment->reference      = null;
+            $payment->payment_date   = null;
+            $payment->save();
+
+            DB::commit();
+
+            Log::info('Payment rejected successfully', [
+                'payment_id' => $payment->id,
+                'reason'     => $validated['rejection_reason'] ?? 'No reason provided',
+            ]);
+
+            return back()->with('success', 'Pembayaran ditolak.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Error rejecting payment', [
+                'payment_id' => $payment->id ?? null,
+                'error'      => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Terjadi kesalahan saat menolak pembayaran.');
+        }
+    }
+
+    /**
+     * Admin menghapus tagihan
+     */
+    public function destroy(Payment $payment)
+    {
+        try {
+            DB::beginTransaction();
+
+            if ($payment->reference) {
+                $path = Str::of($payment->reference)
+                    ->after('storage/')
+                    ->ltrim('/');
+
+                if ($path->isNotEmpty() && Storage::disk('public')->exists($path)) {
+                    Storage::disk('public')->delete($path);
+                }
+            }
+
+            $payment->delete();
+
+            DB::commit();
+
+            Log::info('Payment deleted successfully', ['payment_id' => $payment->id]);
+
+            return back()->with('success', 'Tagihan pembayaran berhasil dihapus.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Error deleting payment', [
+                'payment_id' => $payment->id ?? null,
+                'error'      => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Gagal menghapus pembayaran.');
+        }
+    }
+
+    /**
+     * Generate tagihan bulanan untuk semua tenant aktif
+     */
+    public function generateMonthlyPayments(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'period_month' => 'required|integer|min:1|max:12',
+                'period_year'  => 'required|integer|min:2020|max:2100',
+            ]);
+
+            $month = $validated['period_month'];
+            $year  = $validated['period_year'];
+
+            $tenants = Tenant::where('status', 'aktif')
+                ->with('room')
+                ->get();
+
+            if ($tenants->isEmpty()) {
+                return back()->with('warning', 'Tidak ada tenant aktif untuk dibuatkan tagihan.');
+            }
+
+            $created = 0;
+            $skipped = 0;
+
+            DB::beginTransaction();
+
+            foreach ($tenants as $tenant) {
+                $exists = Payment::where('tenant_id', $tenant->id)
+                    ->where('period_month', $month)
+                    ->where('period_year', $year)
+                    ->where('payment_type', 'rent')
+                    ->exists();
+
+                if ($exists) {
+                    $skipped++;
+                    continue;
+                }
+
+                Payment::create([
+                    'tenant_id'    => $tenant->id,
+                    'payment_type' => 'rent',
+                    'amount'       => $tenant->room->harga ?? 0,
+                    'due_date'     => Carbon::create($year, $month, 26),
+                    'period_month' => $month,
+                    'period_year'  => $year,
+                    'status'       => 'pending',
+                ]);
+
+                $created++;
+            }
+
+            DB::commit();
+
+            return back()->with(
+                'success',
+                "Berhasil membuat {$created} tagihan. {$skipped} sudah ada sebelumnya."
+            );
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Error generating monthly payments', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Gagal membuat tagihan bulanan.');
+        }
+    }
+
+    /**
+     * Label jenis pembayaran (Indonesia)
+     */
+    private function mapPaymentType($type): string
+    {
+        return match ($type) {
+            'rent'       => 'Sewa Bulanan',
+            'deposit'    => 'Deposit',
+            'utilities'  => 'Utilitas',
+            'maintenance'=> 'Maintenance',
+            default      => 'Lainnya',
+        };
     }
 }

@@ -16,7 +16,7 @@ class LoginController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'username' => ['required', 'string'],
+            'name' => ['required', 'string'],
             'password' => ['required', 'string'],
         ]);
 
@@ -71,6 +71,10 @@ class LoginController extends Controller
         
         return redirect('/');
     }
-
+    
+    public function username()
+    {
+        return 'name'; // Force Laravel to use the name column for login
+    }
 
 }
