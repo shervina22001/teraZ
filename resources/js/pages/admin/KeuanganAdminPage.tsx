@@ -214,7 +214,9 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
           setAlertMessage('Tagihan berhasil dibuat!');
           setShowSuccessAlert(true);
           setTimeout(() => {
-            router.reload({ only: ['payments', 'stats'] });
+            router.get('/admin/keuangan', {}, {
+              preserveScroll: true,
+          });
           }, 1200);
         },
         onError: (errors) => {
@@ -287,10 +289,12 @@ const KeuanganAdmin: React.FC<KeuanganAdminProps> = ({
           setSelectedPayment(null);
           setAlertMessage('Pembayaran disetujui!');
           setShowSuccessAlert(true);
+
           setTimeout(() => {
-            router.reload({ only: ['payments', 'stats'] });
-          }, 1200);
-        },
+              router.reload({ only: ['payments', 'stats'] });
+          }, 500);
+      },
+
         onError: (errors) => {
           console.error('Approve failed:', errors);
           setAlertMessage('Gagal menyetujui pembayaran');

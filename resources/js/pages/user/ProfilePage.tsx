@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import Layout from '@/components/teraZ/user/LayoutUser';
-import { Phone, UserRoundCheck, Calendar, ArrowRight, Camera, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { Phone, UserRoundCheck, Camera, X, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface User {
     id: number;
@@ -24,23 +24,15 @@ interface Room {
     status: string;
 }
 
-interface Contract {
-    start_date: string;
-    end_date: string;
-    duration_months: number;
-    status: string;
-    note: string;
-}
 
 interface Props {
     user: User;
     tenant: Tenant;
     room: Room;
-    contract: Contract;
     unpaidCount: number;
 }
 
-const Profile: React.FC<Props> = ({ user, tenant, room, contract, unpaidCount }) => {
+const Profile: React.FC<Props> = ({ user, tenant, room, unpaidCount }) => {
     const [showPhotoModal, setShowPhotoModal] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string>('');

@@ -21,7 +21,7 @@ const TestimonialsSection: React.FC = () => {
     },
     {
       id: 3,
-      name: 'Tabina',
+      name: 'Rafa',
       subtitle: 'Freelancer',
       avatar: '/teraZ/testi3.png',
       text: '"WiFi-nya kencang + stabil banget, kerja remote nggak terhambat tanpa gangguan. Suasananya tenang dan nyaman, jadi buat fokus kerja kalem suntuk, tinggal di kamar belakang buat nyegerin kepala."',

@@ -61,9 +61,6 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({
   const [newTenantNotes, setNewTenantNotes] = useState('');
 
   const penghunis = initialTenants;
-  const totalPenghuni = penghunis.length;
-  const pembayaranLunas = penghunis.filter((p) => p.status === 'Lunas').length;
-  const pendingPayment = penghunis.filter((p) => p.status === 'Menunggu').length;
 
   // === UI handlers (dari kode kedua) ===
   const handleEditClick = (penghuni: Penghuni) => {
@@ -219,22 +216,6 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({
         </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <p className="text-base text-[#412E27] mb-2">Total Penghuni</p>
-          <p className="text-4xl font-bold text-[#412E27]">{totalPenghuni}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <p className="text-base text-[#412E27] mb-2">Pembayaran Lunas</p>
-          <p className="text-4xl font-bold text-[#412E27]">{pembayaranLunas}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <p className="text-base text-[#412E27] mb-2">Menunggu</p>
-          <p className="text-4xl font-bold text-[#412E27]">{pendingPayment}</p>
-        </div>
-      </div>
-
       {/* List Penghuni (UI dari kode kedua) */}
       <div className="space-y-6">
         {penghunis.map((penghuni) => (
@@ -377,21 +358,6 @@ const PenghuniAdmin: React.FC<PenghuniAdminProps> = ({
                 className="text-black w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E]"
                 placeholder="01"
               />
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-[#412E27] mb-2">Status Pembayaran</label>
-              <select
-                value={statusPenghuni}
-                onChange={(e) =>
-                  setStatusPenghuni(e.target.value as 'Lunas' | 'Terlambat' | 'Menunggu')
-                }
-                className="text-black w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A2B1E]"
-              >
-                <option value="Lunas">Lunas</option>
-                <option value="Terlambat">Terlambat</option>
-                <option value="Menunggu">Menunggu</option>
-              </select>
             </div>
 
             <button

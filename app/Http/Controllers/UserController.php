@@ -7,6 +7,7 @@ use App\Models\Payment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 
 class UserController extends Controller
 {
@@ -30,6 +31,37 @@ class UserController extends Controller
         $unpaidCount = $tenant->payments()
         ->where('status', 'pending')   // sesuaikan kalau status di DB-mu beda, misal 'unpaid'
         ->count();
+
+
+        $unpaidMonths = $tenant->payments()
+        ->where('status', 'pending')
+        ->get()
+        ->groupBy(function ($p) {
+            // bikin string "2025-08"
+            return sprintf('%04d-%02d', $p->period_year, $p->period_month);
+        })
+        ->map(function ($items, $month) {
+            return [
+                'month'     => $month, // contoh: "2025-08"
+                'monthName' => Carbon::parse($month . '-01')->translatedFormat('F Y'),
+                'total'     => $items->sum('amount'),
+            ];
+        })
+        ->values();
+
+        $rejectedPayments = $tenant->payments()
+        ->where('status', 'rejected')
+        ->orderBy('period_year')
+        ->orderBy('period_month')
+        ->get()
+        ->map(function ($p) {
+            return [
+                'month'     => sprintf('%04d-%02d', $p->period_year, $p->period_month),
+                'monthName' => Carbon::create($p->period_year, $p->period_month, 1)->translatedFormat('F Y'),
+                'reason'    => $p->notes ?? 'Tidak ada alasan',
+            ];
+        });
+
 
         // Map data room
         $room = $tenant->room ? [
@@ -73,6 +105,8 @@ class UserController extends Controller
             'contract' => $contract,
 
             'unpaidCount' => $unpaidCount,
+            'unpaidMonths' => $unpaidMonths,
+            'rejectedPayments' => $rejectedPayments,
         ]);
     }
 

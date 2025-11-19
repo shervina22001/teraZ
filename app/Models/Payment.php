@@ -7,10 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
-
 class Payment extends Model
 {
-    
     protected $fillable = [
         'tenant_id',
         'payment_type',
@@ -25,19 +23,47 @@ class Payment extends Model
         'period_month',
         'period_year',
         'paid_at',
-        'payment_proof',
         'last_notified_at',
     ];
 
-    protected $appends = ['payment_proof_url'];
+    /**
+     * Semua accessor yang harus dikirim ke frontend
+     */
+    protected $appends = [
+        'payment_proof_url',
+        'status_label',
+        'status_color',
+        'period_name'
+    ];
 
+    /**
+     * Casts
+     */
+    protected $casts = [
+        'amount' => 'decimal:2',
+        'due_date' => 'date',
+        'payment_date' => 'date',
+        'paid_at' => 'datetime',
+        'last_notified_at' => 'datetime',
+    ];
+
+    /**
+     * Relasi tenant
+     */
+    public function tenant()
+    {
+        return $this->belongsTo(Tenant::class);
+    }
+
+    /**
+     * URL bukti pembayaran
+     */
     public function getPaymentProofUrlAttribute()
     {
-        if (! $this->payment_proof) {
+        if (!$this->payment_proof) {
             return null;
         }
 
-        // DB hanya simpan nama file: "paymen_1727705_8_cvx.png"
         $path = 'payment_proofs/' . $this->payment_proof;
 
         if (Storage::disk('public')->exists($path)) {
@@ -47,45 +73,27 @@ class Payment extends Model
         return null;
     }
 
-    protected $casts = [
-        'amount' => 'decimal:2',
-        'due_date' => 'date',
-        'payment_date' => 'date',
-        'paid_at' => 'datetime',
-        'last_notified_at'=> 'datetime',
-    ];
-
-    public function tenant()
+    /**
+     * Status label
+     */
+    public function getStatusLabelAttribute()
     {
-        return $this->belongsTo(Tenant::class);
-    }
-
-    // Check if payment is overdue
-    public function isOverdue(): bool
-    {
-        if ($this->status === 'paid' || $this->status === 'confirmed') {
-            return false;
-        }
-        return Carbon::parse($this->due_date)->isPast();
-    }
-
-    // Get status label in Indonesian
-    public function getStatusLabelAttribute(): string
-    {
-        return match($this->status) {
+        return match ($this->status) {
             'pending' => 'Belum Bayar',
             'paid' => 'Menunggu Konfirmasi',
             'confirmed' => 'Lunas',
             'rejected' => 'Ditolak',
             'overdue' => 'Terlambat',
-            default => 'Belum Bayar',
+            default => 'Tidak Diketahui'
         };
     }
 
-    // Get status badge color
-    public function getStatusColorAttribute(): string
+    /**
+     * Status color
+     */
+    public function getStatusColorAttribute()
     {
-        return match($this->status) {
+        return match ($this->status) {
             'confirmed' => 'green',
             'paid' => 'blue',
             'pending' => 'yellow',
@@ -95,8 +103,9 @@ class Payment extends Model
         };
     }
 
-
-    // Get period name
+    /**
+     * Nama periode (Januari 2025 dst)
+     */
     public function getPeriodNameAttribute(): string
     {
         if (!$this->period_month || !$this->period_year) {
@@ -112,19 +121,9 @@ class Payment extends Model
         return $months[$this->period_month] . ' ' . $this->period_year;
     }
 
-     /**
-     * Scope: pembayaran yang butuh DIINGATKAN
-     *
-     * Alur:
-     * 1. Hanya ambil status "pending" (belum bayar).
-     *    - Kalau admin ubah ke "paid" / "confirmed" / "rejected",
-     *      otomatis keluar dari query ini → tidak dikirimi notifikasi lagi.
-     * 2. due_date <= hari ini → sudah jatuh tempo atau tepat hari ini.
-     * 3. last_notified_at:
-     *    - null  → belum pernah dikirimi pengingat.
-     *    - atau terakhir kirim BUKAN hari ini → cegah spam harian.
+    /**
+     * Scope pembayaran yang perlu diingatkan
      */
-
     public function scopeNeedReminder($query)
     {
         $today = Carbon::today();
@@ -133,7 +132,19 @@ class Payment extends Model
             ->whereDate('due_date', '<=', $today)
             ->where(function ($q) use ($today) {
                 $q->whereNull('last_notified_at')
-                  ->orWhereDate('last_notified_at', '<', $today);
+                    ->orWhereDate('last_notified_at', '<', $today);
             });
+    }
+
+    /**
+     * Overdue checker
+     */
+    public function isOverdue(): bool
+    {
+        if (in_array($this->status, ['paid', 'confirmed'])) {
+            return false;
+        }
+
+        return Carbon::parse($this->due_date)->isPast();
     }
 }
