@@ -16,7 +16,10 @@
         "laravel/tinker": "^2.10.1",
         "laravel/wayfinder": "^0.1.9",
         "spatie/laravel-permission": "^6.21",
-        "tymon/jwt-auth": "^2.2"
+        "tymon/jwt-auth": "^2.2", 
+        "ext-pdo_pgsql": "*",
+        "ext-pgsql": "*"
+
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
